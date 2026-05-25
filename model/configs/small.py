@@ -72,6 +72,6 @@ beta2         = 0.95
 grad_clip     = 1.0
 
 # ── Eval / logging ──
-eval_interval = 500
+eval_interval = 250    # every N iters: estimate train/val/gen CE+ppl, maybe save ckpt
 eval_iters    = 50
 log_interval  = 10
