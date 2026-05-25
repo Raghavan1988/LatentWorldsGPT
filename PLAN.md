@@ -133,17 +133,49 @@ risk first.
 - **Acceptance:** node-level linear probe accuracy > 0.9 for n ≤ 8;
   destroyed-structure control drops to chance.
 
-### Milestone 2 — Music (within-domain mixed-verdict experiment)
+### Milestone 2 — Music: three load-bearing probes, three independent bets
 
 **Effort:** 2–3 days. Highest scientific value per day in the portfolio.
 - `data/prepare_music.py` using `music21` Bach chorales.
 - Train small.py.
 - Compute three probe targets (key signature, current chord, beat position)
-  via `music21` and run each through `eval/probe.py` with the standard
-  destroyed-structure suite.
-- **Acceptance:** key and chord probes show the cities-like failure mode (high
-  R² on real AND on within-piece-shuffled). Beat probe shows the Othello-like
-  positive (high accuracy on real, collapsed on shuffle).
+  via `music21` and run each through `eval/probe.py` with the two-tier
+  destroyed-structure suite (within-piece shuffle + global shuffle), matching
+  the cities decomposition.
+
+**Each probe is an independent bet on whether sequence order is load-bearing
+for that target in tonal music.** All three outcomes have substantial reward
+or risk depending on direction; see pivot.md Milestone 2 for the full
+outcome matrix.
+
+- **Key probe** — predicted to *survive* shuffle (cities-analogue). If it
+  collapses, key is sequence-trained (cadential context); ¬L stops being
+  binary.
+- **Chord probe** — predicted to *survive* shuffle. If it collapses,
+  functional-harmony context is sequence-trained — a finer-grained Othello-
+  positive than beat.
+- **Beat probe** — predicted to *collapse* on shuffle (the load-bearing
+  positive). If it survives, tonal pitch-class statistics leak beat
+  information (strong beats favor I/V), and the within-domain positive role
+  has to move elsewhere.
+
+**Joint outcomes (2³ space → four qualitative cases):**
+
+- **A.** Predicted mixed verdict (key + chord survive, beat collapses) →
+  paper's originally-planned central figure lands.
+- **B.** Universal cities-like failure (all three survive) → beat-leak is
+  real; within-domain positive role moves to a less-leaky corpus or
+  milestone.
+- **C.** Universal Othello-like positive (all three collapse) → music is
+  less leaky than expected; mixed-verdict claim fails but music becomes a
+  clean positive analogue.
+- **D.** Graded leak (any partial-mixed pattern) → ¬L reshapes from binary
+  to a quantity; highest ceiling, highest write-up cost.
+
+- **Acceptance:** the three-probe × three-condition table (real /
+  within-piece-shuffled / global-shuffled) on a single trained model with
+  node-level splits. Framing decision (which of A–D the paper centers on)
+  is made *after* the table is in hand.
 
 ### Milestone 3 — Dialog-state tracker (applied text)
 

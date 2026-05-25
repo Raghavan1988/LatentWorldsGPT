@@ -146,5 +146,11 @@ cheap.
       | South Bay (MV+SV+SC) | 45,696 | 45,699 |        3.98M |         ~87 |
 
 - [ ] **Multi-domain expansion** — see `pivot.md` for the milestone list.
-      Next up: Milestone 1 (symmetric-group, methodology calibration); then
-      Milestone 2 (music, the within-domain mixed-verdict experiment).
+      **Order inverted from pivot.md (user decision 2026-05-24):** Milestone 2
+      (music) first; Milestone 1 (symmetric-group) held as a methodology-
+      calibration fallback if music's results look suspicious.
+      Music is *three independent bets* (key signature, current chord, beat
+      position), each with substantial risk/reward depending on outcome —
+      pivot.md Milestone 2 carries the full outcome matrix (cases A–D). None
+      of the four joint outcomes are dead ends; the framing decision is made
+      after the three-probe × three-condition table is in hand, not before.

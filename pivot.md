@@ -318,29 +318,62 @@ This is a sanity check, not a paper result.
 on held-out tokens for n ≤ 8; destroyed-structure control drops to
 near-chance.
 
-### Milestone 2 — The within-domain mixed-verdict figure (2–3 days)
+### Milestone 2 — Music: three load-bearing probes, three independent bets (2–3 days)
 **Domain:** Music.
 
 - Write `data/prepare_music.py` using Bach chorales from `music21`.
 - Train small.py.
 - Compute three probe targets via `music21`: key, current chord, beat
   position.
-- Run all three through `eval/probe.py` with node-level split and
-  destroyed-structure control (within-piece pitch shuffle).
-- **Critical predictions to verify:**
-  - Key probe: high R² on real *and* shuffled → cities-like failure
-    reproduced.
-  - Chord probe: high R² on real and shuffled → same.
-  - Beat probe: high accuracy on real, *collapsed* on shuffled →
-    Othello-like positive.
+- Run all three through `eval/probe.py` with node-level split AND the
+  two-tier destroyed-structure control template (within-piece shuffle
+  + global shuffle), matching the cities decomposition.
 
-**Why second:** highest scientific value per day. This is the single
-experiment that varies only one criterion while holding the model and
-data constant. If it lands as predicted, the paper has its load-bearing
-empirical figure.
+**Each probe is an independent bet on whether sequence order is
+load-bearing for its target in tonal music. Each direction of each
+outcome reshapes the paper in a different way — there is no "uninteresting"
+result, but only one outcome lands the originally-imagined central figure.**
 
-**Definition of done:** the three-probe table showing the predicted
-mixed verdicts, with destroyed-structure ablation.
+| Probe | Predicted | If survives shuffle | If collapses on shuffle |
+|---|---|---|---|
+| **Key signature** | survives (cities-like) | predicted; clean cities-analogue in a non-spatial domain — strengthens the ¬L co-occurrence-leak story | surprise: key is sequence-trained (cadential / modulation context); undermines ¬L as a clean binary and suggests tonal context does real representational work |
+| **Current chord** | survives (cities-like) | predicted; same shape as key | functional-harmony context is sequence-trained — a finer-grained Othello-positive than beat; reshapes ¬L into a graded axis (key fails, chord passes, beat passes) |
+| **Beat position** | collapses (Othello-like) | **bad outcome.** Beat reconstructible from pitch-class statistics (strong beats favor I/V in tonal music); tonal music too leaky to host the within-domain positive; forces fallback to a less-leaky corpus or moves the within-domain positive role to a different milestone | predicted; the paper's load-bearing positive figure |
+
+**Joint outcomes worth naming (the 2³ outcome space groups into four
+qualitative cases):**
+
+- **A. Predicted mixed verdict** (key + chord survive, beat collapses)
+  → paper's originally-planned central figure lands. The within-domain
+  experiment isolates ¬L cleanly under a fixed model. Best case.
+- **B. Universal cities-like failure** (all three survive)
+  → beat-leak in tonal music is real. The within-domain positive role
+  moves elsewhere (folk monophony, counterpoint exercises, or a different
+  milestone entirely). Cities-style methodology cautionary tale extends
+  to music, which is still a publishable result, just a different paper.
+- **C. Universal Othello-like positive** (all three collapse)
+  → tonal music is less leaky than expected. Music becomes a clean
+  positive analogue and the "mixed verdict" claim fails — but the
+  portfolio reweights toward "we have multiple clean positives plus a
+  cities negative anchor", which is also publishable, just less
+  framing-novel.
+- **D. Graded leak** (any partial-mixed pattern, e.g. key survives,
+  chord and beat collapse)
+  → reshapes ¬L from a binary criterion into a quantity. Potentially the
+  most scientifically interesting outcome; demands a more careful theory
+  of what kinds of co-occurrence support what probe targets. Higher
+  ceiling but also higher write-up cost.
+
+**Why second:** highest scientific value per day. All three probes are
+load-bearing, all four joint outcomes are publishable in some form, and
+the experiment varies only one factor (probe target) while holding model
+and data constant. The "predicted mixed verdict" is the best case, not
+the only viable case.
+
+**Definition of done:** the three-probe × three-condition table (real /
+within-piece-shuffled / global-shuffled) on a single trained model, with
+node-level split applied to each. The framing decision (which of A–D
+the paper centers on) is made *after* the table is in hand, not before.
 
 ### Milestone 3 — First applied datapoint (2–3 days)
 **Domain:** Dialog-state tracker.
@@ -412,7 +445,9 @@ time: 5–8 weeks assuming part-time effort.
 | Risk | Likelihood | Severity | Mitigation |
 |---|:-:|:-:|---|
 | Sym-group methodology validation fails (probe doesn't recover the permutation cleanly) | Low | High | If this happens, the issue is in the probe / model code, not the theory. Debug before proceeding to other domains. |
-| Music beat probe does not collapse under within-piece shuffle as predicted | Medium | High | The framing-level prediction depends on this experiment. If beat probe survives shuffle, the criteria framing needs revision. **Decision point:** if music doesn't deliver the mixed-verdict figure, fall back to a narrower thesis ("co-occurrence leak in spatial domains"). |
+| Music beat probe does not collapse under within-piece shuffle as predicted | Medium | High | The originally-imagined central figure depends on beat collapsing. If beat probe survives, see Milestone-2 outcome B: move the within-domain positive role to a different corpus or milestone; the cities-style "co-occurrence leak in spatial domains" narrows the thesis but is still publishable. |
+| Music key/chord probes collapse on within-piece shuffle (against prediction) | Low–Medium | Medium | Outcome C/D in Milestone 2 — tonal context is doing more sequence-trained work than expected. Reframes ¬L from a binary into a quantity; potentially the most interesting outcome but adds write-up complexity. |
+| Music joint outcome lands as D (partial-mixed / graded leak) | Medium | Medium (upside) | This is the high-ceiling outcome but raises the write-up cost: ¬L stops being a binary criterion and needs a theory of *how much* co-occurrence supports *which* probe targets. Budget extra time for the framing section if D lands. |
 | Flight-phase phase labelling produces too many ambiguous-phase records | Medium | Medium | Sun et al. algorithm has a "transition" / unclassified state; filter or include as own class. |
 | Dialog-state probe is dominated by surface-mention leak (every slot value is mentioned verbatim) | High | Medium | Focus probe evaluation on *inferred* slots specifically. MultiWOZ has cases where the system infers from context; build the probe target around those. |
 | Maze-GPT setup eats more than 7 days | Medium | Medium | Hard-cap effort at 7 days. If not running by then, defer to a follow-up paper. |
@@ -481,7 +516,12 @@ Updated 2026-05-24 evening after the three must-do experiments landed.
 | Cities is a publishable negative-anchor / methodology result | ~85% → **~92%** (transplant decomposition strengthens it materially) |
 | The three-condition causal gradient (real / within-shuffle / global-shuffle) is reproducible | **~95% (new row)** |
 | The clustering-vs-adjacency decomposition holds up to scrutiny | **~80% (new row)** |
-| The within-domain music mixed-verdict will land as predicted | ~70% (unchanged — still untested) |
+| Music joint outcome lands as A (predicted mixed verdict: key + chord survive, beat collapses) | ~40% (sharpened from prior "~70% will land as predicted" — see Milestone-2 outcome matrix) |
+| Music joint outcome is A or D (any partial-mixed pattern → still publishable as a within-domain ¬L result) | ~60% |
+| Music joint outcome is publishable in some form (any of A / B / C / D — none are dead ends) | ~90% |
+| Beat probe collapses on within-piece shuffle (the load-bearing single bet) | ~55% |
+| Key probe survives within-piece shuffle (cities-analogue prediction) | ~70% |
+| Chord probe survives within-piece shuffle (cities-analogue prediction) | ~60% |
 | The wte≠node2vec finding generalises to other domains' embeddings | **~60% (new row)** — needs per-domain comparison |
 | Sym-group + Music + Flight-phase + Dialog-state will be runnable on M1 at smoke scale | ~90% (unchanged) |
 | The paper is workshop-publishable after Milestones 1–4 | ~75% → **~82%** (transplant gives the package a clean causal claim cities alone now supports) |
