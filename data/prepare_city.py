@@ -114,6 +114,24 @@ def encode(route, stoi):
     return [BOS] + [stoi[n] for n in route] + [EOS]
 
 
+def shuffle_route_interior(route, rng):
+    """Phase 4 destroyed-structure control: keep the set of nodes in the route
+    unchanged (so unigram statistics are preserved), but randomly permute their
+    order so that adjacent tokens are NO LONGER neighbors in the graph.
+
+    A model trained on these shuffled routes cannot learn the real graph's
+    adjacency from sequential ordering. If a probe still recovers (lat, lon)
+    from its activations, the geometry came from token-frequency artifacts
+    rather than graph structure. Used by eval/probe.py and eval/causal.py
+    as a negative control.
+    """
+    if len(route) <= 2:
+        return route
+    middle = list(route[1:-1])
+    rng.shuffle(middle)
+    return [route[0], *middle, route[-1]]
+
+
 def generate_corpus(G, stoi, train_dests, heldout, args, rng):
     """Produce three token streams: train, val (in-dist), gen (held-out dests)."""
     nodes = list(G.nodes())
@@ -132,6 +150,8 @@ def generate_corpus(G, stoi, train_dests, heldout, args, rng):
         route = shortest_path_route(G, src, dst)
         if route is None or len(route) < args.min_len:
             continue
+        if args.shuffle_routes:
+            route = shuffle_route_interior(route, rng)
         toks = encode(route, stoi)
         # ~5% of train-destination routes become in-distribution validation
         (val_tokens if rng.random() < args.val_frac else train_tokens).extend(toks)
@@ -148,6 +168,8 @@ def generate_corpus(G, stoi, train_dests, heldout, args, rng):
             route.pop()
         if len(route) < args.min_len:
             continue
+        if args.shuffle_routes:
+            route = shuffle_route_interior(route, rng)
         train_tokens.extend(encode(route, stoi))
 
     # --- shortest-path routes to HELD-OUT destinations -> gen.bin ---
@@ -160,6 +182,8 @@ def generate_corpus(G, stoi, train_dests, heldout, args, rng):
             route = shortest_path_route(G, src, dst)
             if route is None or len(route) < args.min_len:
                 continue
+            if args.shuffle_routes:
+                route = shuffle_route_interior(route, rng)
             gen_tokens.extend(encode(route, stoi))
 
     return train_tokens, val_tokens, gen_tokens
@@ -232,6 +256,13 @@ def main():
     p.add_argument("--walk_max", type=int, default=60)
     p.add_argument("--min_len", type=int, default=4)
     p.add_argument("--val_frac", type=float, default=0.05)
+    p.add_argument("--shuffle_routes", action="store_true",
+                   help="Phase 4 destroyed-structure control: randomly permute "
+                        "the interior tokens of every route (real walks become "
+                        "random permutations of the same nodes). Adjacency "
+                        "in the data no longer corresponds to graph edges. A "
+                        "model trained on this should produce activations from "
+                        "which (lat, lon) is NOT linearly decodable.")
     args = p.parse_args()
 
     rng = random.Random(args.seed)
