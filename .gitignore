@@ -220,11 +220,17 @@ __marimo__/
 # LatentWorldsGPT — local-only artifacts
 original_chat.txt
 checkpoints/
-# generated dataset outputs under data/<city>/
+# generated dataset outputs under data/<city>/ and data/<music_corpus>/
 data/*/*.bin
 data/*/*.pkl
 data/*/coords.csv
 data/*/graph.gpickle
+data/*/key.csv
+data/*/chord.csv
+data/*/beat.csv
+
+# Claude Code cache and ad-hoc smoke outputs
+cache/
 
 # Claude Code per-user settings (never tracked; project-shared `.claude/settings.json` IS allowed)
 **/.claude/settings.local.json

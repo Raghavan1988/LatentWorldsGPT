@@ -4,6 +4,7 @@
 osmnx>=2.0
 networkx>=3.0
 numpy>=1.24
+music21>=10.0          # Milestone 2 (music): Bach chorale corpus + probe targets
 
 # model + training (GPU for training)
 torch>=2.1
