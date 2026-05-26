@@ -145,12 +145,20 @@ cheap.
       | Boston, MA           | 11,368 | 11,371 |        3.03M |        ~260 |
       | South Bay (MV+SV+SC) | 45,696 | 45,699 |        3.98M |         ~87 |
 
-- [ ] **Multi-domain expansion** — see `pivot.md` for the milestone list.
-      **Order inverted from pivot.md (user decision 2026-05-24):** Milestone 2
-      (music) first; Milestone 1 (symmetric-group) held as a methodology-
-      calibration fallback if music's results look suspicious.
-      Music is *three independent bets* (key signature, current chord, beat
-      position), each with substantial risk/reward depending on outcome —
-      pivot.md Milestone 2 carries the full outcome matrix (cases A–D). None
-      of the four joint outcomes are dead ends; the framing decision is made
-      after the three-probe × three-condition table is in hand, not before.
+- [~] **Multi-domain expansion — Milestone 2 (music) first-pass DONE (2026-05-25).**
+      See `updateMay25.md` for the full session writeup.
+      - **Pipeline built**: `data/prepare_music.py` + `eval/probe_music.py`
+        + `eval/valid_voice_step.py` (music-domain valid-edge analogue).
+      - **Three corpora**: `data/music_bach{,_within_shuffled,_global_shuffled}/`
+        — 313 chorales after 4/4+SATB filter, vocab=60, 52,902 train tokens
+        each. Three trained checkpoints saved to `checkpoints/music_bach{,...}/best.pt`.
+      - **Results**: voice-leading gradient clean (96.25% → 64.33% → 55.91%
+        strict; cities valid-edge analogue lands); perplexity gradient clean
+        (3.84 → 22.16 → 27.27); mode probe shows cities-analogue leakage
+        (60/60/55 PIECE-LEVEL); **beat probe inconclusive** — all conditions
+        sit at chance ~26%. Joint outcome doesn't fit any of pivot.md's
+        A–D cleanly.
+      - **Open**: resolve beat-probe null via heavier probe sweep (~30 min)
+        and/or retrain with better-regularized config (~1 day); then revisit
+        framing. Symmetric-group methodology calibration (Milestone 1) is
+        now more attractive as an independent sanity check on the probe code.

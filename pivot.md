@@ -516,12 +516,12 @@ Updated 2026-05-24 evening after the three must-do experiments landed.
 | Cities is a publishable negative-anchor / methodology result | ~85% → **~92%** (transplant decomposition strengthens it materially) |
 | The three-condition causal gradient (real / within-shuffle / global-shuffle) is reproducible | **~95% (new row)** |
 | The clustering-vs-adjacency decomposition holds up to scrutiny | **~80% (new row)** |
-| Music joint outcome lands as A (predicted mixed verdict: key + chord survive, beat collapses) | ~40% (sharpened from prior "~70% will land as predicted" — see Milestone-2 outcome matrix) |
-| Music joint outcome is A or D (any partial-mixed pattern → still publishable as a within-domain ¬L result) | ~60% |
-| Music joint outcome is publishable in some form (any of A / B / C / D — none are dead ends) | ~90% |
-| Beat probe collapses on within-piece shuffle (the load-bearing single bet) | ~55% |
-| Key probe survives within-piece shuffle (cities-analogue prediction) | ~70% |
-| Chord probe survives within-piece shuffle (cities-analogue prediction) | ~60% |
+| Music joint outcome lands as A (predicted mixed verdict: key + chord survive, beat collapses) | ~40% → **~15%** (observed: beat probe at chance in ALL conditions, not high-on-real; see `updateMay25.md`) |
+| Music joint outcome is A or D (any partial-mixed pattern → still publishable as a within-domain ¬L result) | ~60% → **~50%** |
+| Music joint outcome is publishable in some form (any of A / B / C / D — none are dead ends) | ~90% → **~85%** (valid-voice-step gradient is the safety net) |
+| Beat probe collapses on within-piece shuffle (the load-bearing single bet) | ~55% → **n/a** (beat probe doesn't reach a level that can meaningfully collapse — sits at chance everywhere; resolves to (a) no encoding / (b) undertraining / (c) thin probe — TBD) |
+| Mode probe survives within-piece shuffle (cities-analogue prediction) | ~70% → **~75%** (observed 60% vs 60% PIECE-LEVEL, matches prediction) |
+| Music valid-voice-step rate produces a clean three-condition gradient (NEW row — the music-domain analogue of cities valid-edge) | **~95% (NEW; observed first try at 96.25% / 64.33% / 55.91% strict)** |
 | The wte≠node2vec finding generalises to other domains' embeddings | **~60% (new row)** — needs per-domain comparison |
 | Sym-group + Music + Flight-phase + Dialog-state will be runnable on M1 at smoke scale | ~90% (unchanged) |
 | The paper is workshop-publishable after Milestones 1–4 | ~75% → **~82%** (transplant gives the package a clean causal claim cities alone now supports) |

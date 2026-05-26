@@ -135,6 +135,16 @@ risk first.
 
 ### Milestone 2 — Music: three load-bearing probes, three independent bets
 
+**Status (2026-05-25):** First-pass execution DONE. Pipeline + eval suite +
+three trained models + three-condition gradient measured. See
+`updateMay25.md` for the full writeup. Headline: voice-leading rate (a
+new metric, not enumerated in the original outcome matrix) produced the
+clean three-condition gradient pivot.md hoped for (96.25% → 64.33% → 55.91%
+strict); mode probe matched the cities-analogue prediction; beat probe
+inconclusive (chance in all conditions — TBD undertraining vs no-encoding
+vs thin-probe). Joint outcome doesn't fit any of A–D cleanly. Open work:
+heavier probes + retrain to resolve the beat-probe null.
+
 **Effort:** 2–3 days. Highest scientific value per day in the portfolio.
 - `data/prepare_music.py` using `music21` Bach chorales.
 - Train small.py.
