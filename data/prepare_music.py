@@ -126,23 +126,45 @@ def normalize_key(score):
 # ---------------------------------------------------------------------------
 # 3. Per-piece encoding: 4-voice quarter-note grid -> token stream + probe labels
 # ---------------------------------------------------------------------------
+def _beat_step_quarters(score) -> float:
+    """How many quarter-notes equal one BEAT for the score's time signature?
+
+    4/4 → 1.0  (quarter-note beat)
+    4/2 → 2.0  (half-note beat)
+
+    Returns 1.0 for unknown meters (treat as 4/4-equivalent).
+    """
+    from music21 import meter
+    tss = list(score.recurse().getElementsByClass(meter.TimeSignature))
+    if not tss:
+        return 1.0
+    ratio = tss[0].ratioString
+    if ratio == "4/2":
+        return 2.0
+    return 1.0
+
+
 def piece_to_beat_grid(score):
     """Return per-beat 4-tuple of (S, A, T, B) MIDI pitches.
 
-    For each integer-quarter-note offset in [0, total_quarters), we look up
-    each part's currently-sounding note. Returns list of tuples; entries are
-    MIDI ints, or None for rest / no note sounding.
+    For each integer-BEAT offset in [0, n_beats), we look up each part's
+    currently-sounding note. The 'beat' length depends on the time
+    signature: 1 quarter-note for 4/4, 2 quarter-notes for 4/2. This keeps
+    the encoding meter-agnostic — every emitted token-tuple corresponds to
+    one beat regardless of notation.
 
-    We use music21's offset-lookup semantics: a note sounding at offset T
-    (i.e. T >= note.offset and T < note.offset + note.duration.quarterLength)
-    contributes its pitch to that beat.
+    Returns list of tuples; entries are MIDI ints, or None for rest / no
+    note sounding.
     """
+    step = _beat_step_quarters(score)
     total_quarters = int(round(score.highestTime))
+    n_beats = int(total_quarters / step)
     parts = list(score.parts)[:4]  # S, A, T, B
     voice_streams = [part.flatten().notes for part in parts]
 
     grid = []
-    for q in range(total_quarters):
+    for b in range(n_beats):
+        q = b * step  # quarter-note offset of this beat
         voices = []
         for vs in voice_streams:
             # find note whose [offset, offset+duration) contains q
@@ -151,7 +173,6 @@ def piece_to_beat_grid(score):
                 start = n.offset
                 end = start + n.duration.quarterLength
                 if start <= q < end:
-                    # n may be a chord; take its highest/lowest pitch consistently
                     if n.isChord:
                         current = max(p.midi for p in n.pitches)
                     else:

@@ -308,33 +308,69 @@ def piece_split(pieces, train_frac, seed):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def run_layer_sweep(X_layers, y, n_classes, train_ix, test_ix, epochs, device,
-                    label, target_name):
+                    label, target_name, seeds=(0,)):
+    """For each layer, train a Linear + MLP classifier under each seed in
+    `seeds`. Returns rows of (L, lin_stats, mlp_stats) where each stats dict
+    has 'accuracies' (list), 'accuracy_mean', 'accuracy_std', 'accuracy_max',
+    and 'macro_f1_mean'.
+
+    seeds = (0,) reproduces the single-seed behavior. Multiple seeds
+    re-initialize the classifier and re-shuffle the train/test split
+    within the already-sampled probe positions, providing a more honest
+    estimate of probe accuracy under noise.
+    """
     if len(train_ix) == 0 or len(test_ix) == 0:
         print(f"\n{label}: empty split, skipping")
         return []
     print(f"\n{'─'*78}")
-    print(f"{label}  —  target: {target_name}  (n_classes={n_classes})")
+    print(f"{label}  —  target: {target_name}  "
+          f"(n_classes={n_classes}, seeds={list(seeds)})")
     print(f"{'─'*78}")
-    header = f"{'Layer':<8}{'LinAcc':>10}{'LinF1':>10}{'MLPAcc':>10}{'MLPF1':>10}"
+    header = (f"{'Layer':<8}"
+              f"{'Lin μ±σ':>14}{'Lin max':>10}"
+              f"{'MLP μ±σ':>14}{'MLP max':>10}")
     print(header); print("─" * len(header))
     rows = []
     for L, Xl in enumerate(X_layers):
         Xtr, Xte = Xl[train_ix], Xl[test_ix]
         ytr, yte = y[train_ix],  y[test_ix]
-        lin = train_and_eval_classifier(
-            LinearClassifier(Xl.shape[1], n_classes),
-            Xtr, ytr, Xte, yte, n_classes, device,
-            lr=1e-3, weight_decay=1e-3, epochs=epochs,
-        )
-        mlp = train_and_eval_classifier(
-            MLPClassifier(Xl.shape[1], n_classes),
-            Xtr, ytr, Xte, yte, n_classes, device,
-            lr=1e-3, weight_decay=1e-5, epochs=epochs,
-        )
+        lin_accs = []; mlp_accs = []
+        lin_f1s = []; mlp_f1s = []
+        for s in seeds:
+            torch.manual_seed(s); np.random.seed(s)
+            lin = train_and_eval_classifier(
+                LinearClassifier(Xl.shape[1], n_classes),
+                Xtr, ytr, Xte, yte, n_classes, device,
+                lr=1e-3, weight_decay=1e-3, epochs=epochs,
+            )
+            mlp = train_and_eval_classifier(
+                MLPClassifier(Xl.shape[1], n_classes),
+                Xtr, ytr, Xte, yte, n_classes, device,
+                lr=1e-3, weight_decay=1e-5, epochs=epochs,
+            )
+            lin_accs.append(lin["accuracy"]); lin_f1s.append(lin["macro_f1"])
+            mlp_accs.append(mlp["accuracy"]); mlp_f1s.append(mlp["macro_f1"])
+
+        lin_stats = {
+            "accuracies":     lin_accs,
+            "accuracy_mean":  float(np.mean(lin_accs)),
+            "accuracy_std":   float(np.std(lin_accs)),
+            "accuracy_max":   float(np.max(lin_accs)),
+            "macro_f1_mean":  float(np.mean(lin_f1s)),
+        }
+        mlp_stats = {
+            "accuracies":     mlp_accs,
+            "accuracy_mean":  float(np.mean(mlp_accs)),
+            "accuracy_std":   float(np.std(mlp_accs)),
+            "accuracy_max":   float(np.max(mlp_accs)),
+            "macro_f1_mean":  float(np.mean(mlp_f1s)),
+        }
         layer_label = "embed" if L == 0 else f"L{L}"
-        print(f"{layer_label:<8}{lin['accuracy']:>10.4f}{lin['macro_f1']:>10.4f}"
-              f"{mlp['accuracy']:>10.4f}{mlp['macro_f1']:>10.4f}")
-        rows.append((L, lin, mlp))
+        lin_ms = f"{lin_stats['accuracy_mean']:.3f}±{lin_stats['accuracy_std']:.3f}"
+        mlp_ms = f"{mlp_stats['accuracy_mean']:.3f}±{mlp_stats['accuracy_std']:.3f}"
+        print(f"{layer_label:<8}{lin_ms:>14}{lin_stats['accuracy_max']:>10.4f}"
+              f"{mlp_ms:>14}{mlp_stats['accuracy_max']:>10.4f}")
+        rows.append((L, lin_stats, mlp_stats))
     return rows
 
 
@@ -358,15 +394,31 @@ def main():
     p.add_argument("--n_positions", type=int, default=20_000)
     p.add_argument("--probe_train_frac", type=float, default=0.8)
     p.add_argument("--epochs", type=int, default=100)
-    p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--seed", type=int, default=None,
+                   help="legacy single-seed flag; use --seeds instead")
+    p.add_argument("--seeds", type=int, nargs="+", default=None,
+                   help="one or more probe seeds (default [0]). Each seed "
+                        "re-runs probe-data sampling + classifier training; "
+                        "results aggregated across seeds.")
+    p.add_argument("--report_mode", choices=("max", "mean", "both"),
+                   default="both",
+                   help="how to summarize per-layer accuracies in the "
+                        "headline. 'max' picks the best layer (the original, "
+                        "inflated default). 'mean' reports the cross-layer "
+                        "mean. 'both' shows both side-by-side.")
     p.add_argument("--targets", nargs="+", default=list(TARGET_NAMES),
                    choices=TARGET_NAMES, help="which probe targets to run")
     p.add_argument("--skip_untrained", action="store_true")
     p.add_argument("--skip_piece_split", action="store_true")
     args = p.parse_args()
 
-    torch.manual_seed(args.seed)
-    np.random.seed(args.seed)
+    if args.seeds is None:
+        args.seeds = [args.seed] if args.seed is not None else [0]
+    if args.seed is None:
+        args.seed = args.seeds[0]
+
+    torch.manual_seed(args.seeds[0])
+    np.random.seed(args.seeds[0])
 
     device = ("cuda" if torch.cuda.is_available()
               else "mps" if torch.backends.mps.is_available()
@@ -465,43 +517,67 @@ def main():
         summaries[tgt]["pos_trained"] = run_layer_sweep(
             X_t, y, ncls, pos_train_t, pos_test_t, args.epochs, device,
             label=f"TRAINED — POSITION-LEVEL", target_name=tgt,
+            seeds=tuple(args.seeds),
         )
         if not args.skip_piece_split:
             summaries[tgt]["piece_trained"] = run_layer_sweep(
                 X_t, y, ncls, piece_train_t, piece_test_t, args.epochs, device,
-                label=f"TRAINED — PIECE-LEVEL (held-out pieces)", target_name=tgt,
+                label=f"TRAINED — PIECE-LEVEL (held-out pieces)",
+                target_name=tgt, seeds=tuple(args.seeds),
             )
         if untrained_model is not None:
             y_u = {"mode": y_mode_u, "chord": y_chord_u_int, "beat": y_beat_u}[tgt]
             summaries[tgt]["pos_untrained"] = run_layer_sweep(
                 X_u, y_u, ncls, pos_train_u, pos_test_u, args.epochs, device,
                 label=f"UNTRAINED — POSITION-LEVEL (random-init control)",
-                target_name=tgt,
+                target_name=tgt, seeds=tuple(args.seeds),
             )
             if not args.skip_piece_split:
                 summaries[tgt]["piece_untrained"] = run_layer_sweep(
                     X_u, y_u, ncls, piece_train_u, piece_test_u, args.epochs, device,
                     label=f"UNTRAINED — PIECE-LEVEL", target_name=tgt,
+                    seeds=tuple(args.seeds),
                 )
 
     # ── headline ──
-    print(f"\n{'═'*78}\nHEADLINE\n{'═'*78}")
+    print(f"\n{'═'*78}\nHEADLINE (n_seeds={len(args.seeds)}, "
+          f"report_mode={args.report_mode})\n{'═'*78}")
 
-    def best(rows, probe_ix):
-        if not rows:
-            return None
-        return max(rows, key=lambda r: r[probe_ix]["accuracy"])
+    def best_by_mean(rows, probe_ix):
+        if not rows: return None
+        return max(rows, key=lambda r: r[probe_ix]["accuracy_mean"])
+
+    def best_by_max(rows, probe_ix):
+        if not rows: return None
+        return max(rows, key=lambda r: r[probe_ix]["accuracy_max"])
+
+    def mean_across_layers(rows, probe_ix):
+        if not rows: return None
+        all_accs = [a for r in rows for a in r[probe_ix]["accuracies"]]
+        return {"mean": float(np.mean(all_accs)),
+                "std":  float(np.std(all_accs)),
+                "n":    len(all_accs)}
 
     def show(rows, probe_ix, label):
-        b = best(rows, probe_ix)
-        if b is None:
-            print(f"  {label:<32}    —")
-            return
-        L, _, _ = b
-        res = b[probe_ix]
-        layer = "embed" if L == 0 else f"L{L}"
-        print(f"  {label:<32}  {layer:>5}   "
-              f"acc={res['accuracy']:>+.4f}   F1={res['macro_f1']:.4f}")
+        if not rows:
+            print(f"  {label:<28}    —"); return
+        if args.report_mode in ("mean", "both"):
+            cross = mean_across_layers(rows, probe_ix)
+            print(f"  {label:<28}  mean-across-layers&seeds: "
+                  f"{cross['mean']:.4f} ± {cross['std']:.4f}  (n={cross['n']})")
+        if args.report_mode in ("max", "both"):
+            b = best_by_max(rows, probe_ix)
+            L, _, _ = b
+            res = b[probe_ix]
+            layer = "embed" if L == 0 else f"L{L}"
+            print(f"  {label:<28}  max-layer&seed:           "
+                  f"{res['accuracy_max']:.4f}  (at {layer})")
+        if args.report_mode == "both":
+            # show the inflation: max - mean
+            b = best_by_max(rows, probe_ix)
+            cross = mean_across_layers(rows, probe_ix)
+            inflation = b[probe_ix]["accuracy_max"] - cross["mean"]
+            print(f"  {label:<28}  inflation (max − mean):   {inflation:+.4f}")
 
     for tgt in args.targets:
         print(f"\n  [{tgt}]")
@@ -519,15 +595,22 @@ def main():
             show(s["piece_untrained"], 2, "untrained MLP")
 
     print(f"\n{'─'*78}\nINTERPRETATION GUIDE\n{'─'*78}")
-    print("  Beat probe is the load-bearing Othello-positive prediction:")
+    print("  Beat probe (load-bearing Othello-positive prediction):")
     print("    real model:        high accuracy on PIECE-LEVEL split")
     print("    within-shuffled:   should COLLAPSE on PIECE-LEVEL split")
     print("    global-shuffled:   should COLLAPSE to chance (~0.25)")
     print("")
-    print("  Mode / chord probes test the cities-analogue prediction:")
+    print("  Mode / chord probes (cities-analogue prediction):")
     print("    real model:        high acc on PIECE-LEVEL")
     print("    within-shuffled:   should STAY HIGH (set-membership leak)")
     print("    global-shuffled:   should collapse")
+    print("")
+    print("  Honest reporting note:")
+    print("    Use the 'mean-across-layers&seeds' number as the headline.")
+    print("    'max-layer&seed' is shown for comparison — its inflation over")
+    print("    the mean reveals how much best-of-n selection contaminates")
+    print("    single-seed results. Treat large inflation (>5 pts) as a red")
+    print("    flag for the reliability of a max-based finding.")
 
 
 if __name__ == "__main__":
