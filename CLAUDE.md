@@ -145,8 +145,21 @@ cheap.
       | Boston, MA           | 11,368 | 11,371 |        3.03M |        ~260 |
       | South Bay (MV+SV+SC) | 45,696 | 45,699 |        3.98M |         ~87 |
 
-- [~] **Multi-domain expansion — Milestone 2 (music) first-pass DONE (2026-05-25).**
-      See `updateMay25.md` for the full session writeup.
+- [~] **Multi-domain expansion — Milestone 2 (music) + Milestone 1 (sym-group)
+      methodology calibration DONE (2026-05-25 → 2026-05-26).**
+      See `updateMay25.md` for the M2 first-pass writeup and `updateMay26.md`
+      for the heavy-probe + sym-group session that followed.
+      - **Cities-style reversal replicates in music**: within-piece-shuffled
+        model has HIGHER beat-probe PIECE-LEVEL accuracy than real model
+        (MLP 42% vs 33%). Mode probe is purely lexical (trained ≈ untrained
+        in all conditions). Same MLP-contamination shape as cities.
+      - **Sym-group methodology calibration inconclusive**: self-avoiding-walk
+        task improved val_ppl (5.90 vs 6.82 uniform) but probe collapsed
+        to lexical-only signal. Can't yet distinguish probe-code-broken vs
+        task-design-insufficient.
+      - **Voice-leading gradient (eval/valid_voice_step.py) is the
+        cleanest comparable result** (96.25% / 64.33% / 55.91%
+        real/within/global), structurally analogous to cities' valid-edge.
       - **Pipeline built**: `data/prepare_music.py` + `eval/probe_music.py`
         + `eval/valid_voice_step.py` (music-domain valid-edge analogue).
       - **Three corpora**: `data/music_bach{,_within_shuffled,_global_shuffled}/`

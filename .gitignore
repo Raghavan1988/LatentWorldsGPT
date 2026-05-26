@@ -228,6 +228,7 @@ data/*/graph.gpickle
 data/*/key.csv
 data/*/chord.csv
 data/*/beat.csv
+data/*/partial_product.csv
 
 # Claude Code cache and ad-hoc smoke outputs
 cache/

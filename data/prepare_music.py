@@ -48,23 +48,47 @@ N_RESERVED = 4
 # ---------------------------------------------------------------------------
 # 1. Load + filter the Bach chorale corpus
 # ---------------------------------------------------------------------------
-def load_chorales(limit=None):
-    """Yield (bwv_label, Score) for chorales we can safely parse.
+def load_chorales(limit=None, composers=("bach",)):
+    """Yield (label, Score) for pieces by the given composers.
 
-    music21 ships ~371 Bach chorales. We yield Score objects; downstream
-    code filters by meter / voice count.
+    'bach' uses corpus.chorales.Iterator (~371 Bach chorales).
+    Any other composer name goes through corpus.search(composer, 'composer')
+    and yields the parsed Score for each metadata bundle entry.
+
+    Downstream code filters by meter / voice count.
     """
     from music21 import corpus
-    it = corpus.chorales.Iterator(returnType="stream")
-    for i, score in enumerate(it):
-        if limit is not None and i >= limit:
-            break
-        label = getattr(score.metadata, "title", None) or f"chorale_{i}"
-        yield label, score
+    yielded = 0
+    for composer in composers:
+        if composer == "bach":
+            it = corpus.chorales.Iterator(returnType="stream")
+            for i, score in enumerate(it):
+                if limit is not None and yielded >= limit:
+                    return
+                label = getattr(score.metadata, "title", None) or f"bach_chorale_{i}"
+                yielded += 1
+                yield label, score
+        else:
+            results = corpus.search(composer, "composer")
+            for j, md in enumerate(results):
+                if limit is not None and yielded >= limit:
+                    return
+                try:
+                    score = md.parse()
+                except Exception:
+                    continue
+                label = getattr(score.metadata, "title", None) or f"{composer}_{j}"
+                yielded += 1
+                yield label, score
 
 
-def is_44_satb(score) -> bool:
-    """Filter: keep pieces in 4/4 with exactly 4 parts (SATB)."""
+def is_44_satb(score, accept_4_2: bool = True) -> bool:
+    """Filter: keep pieces with 4 parts (SATB) and 4-beats-per-measure meter.
+
+    Accepts 4/4 by default; with accept_4_2=True also accepts 4/2 (same
+    beat structure, just longer note-length convention common in renaissance
+    polyphony). Rejects pieces with changing time signatures.
+    """
     from music21 import meter
     parts = list(score.parts)
     if len(parts) != 4:
@@ -72,10 +96,12 @@ def is_44_satb(score) -> bool:
     tss = list(score.recurse().getElementsByClass(meter.TimeSignature))
     if not tss:
         return False
-    # require single, non-changing 4/4
     ratios = {ts.ratioString for ts in tss}
-    if ratios != {"4/4"}:
+    allowed = {"4/4"} | ({"4/2"} if accept_4_2 else set())
+    if not ratios.issubset(allowed):
         return False
+    if len(ratios) != 1:
+        return False  # changing meter
     return True
 
 
@@ -346,9 +372,9 @@ def build_corpus(args, rng):
     """
     from music21 import key as key_module
 
-    print("[1/5] loading chorales from music21 corpus ...")
+    print(f"[1/5] loading pieces from music21 corpus (composers={args.composers}) ...")
     pieces = []  # list of (mode_label, transposed_score, key_obj)
-    for label, score in load_chorales(limit=args.limit):
+    for label, score in load_chorales(limit=args.limit, composers=tuple(args.composers)):
         if not is_44_satb(score):
             continue
         try:
@@ -436,7 +462,12 @@ def main():
     p.add_argument("--gen_frac", type=float, default=0.10,
                    help="fraction of pieces for held-out test (probe eval)")
     p.add_argument("--limit", type=int, default=None,
-                   help="optional cap on number of chorales (for smoke runs)")
+                   help="optional cap on number of pieces (for smoke runs)")
+    p.add_argument("--composers", nargs="+", default=["bach"],
+                   help="composer(s) to pull from the music21 corpus. "
+                        "'bach' uses the Bach chorale iterator; other names "
+                        "(palestrina, monteverdi, josquin, ...) use "
+                        "corpus.search(name, 'composer'). Multiple allowed.")
     p.add_argument("--shuffle_within_piece", action="store_true",
                    help="weak destroyed-structure control: shuffle pitch "
                         "tokens within each piece. Predicted to leave the "

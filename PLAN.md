@@ -125,25 +125,48 @@ risk first.
 
 ### Milestone 1 — Symmetric-group-GPT (methodology calibration)
 
-**Effort:** 1–2 days. Lowest-risk; guaranteed-positive domain by construction.
-- `data/prepare_symgroup.py` synthetic generator (words in Sₙ, target is
-  resulting permutation).
-- Train small.py; probe via `eval/probe.py` (with node-level split);
-  destroyed-structure via within-word generator shuffle.
-- **Acceptance:** node-level linear probe accuracy > 0.9 for n ≤ 8;
-  destroyed-structure control drops to chance.
+**Status (2026-05-26):** First-pass DONE, methodology calibration
+**inconclusive**. See `updateMay26.md`. Two variants tried:
+- *Random uniform words:* model converges to uniform-over-generators
+  (no learnable signal); probe at majority-class baseline.
+- *Self-avoiding walks on Cayley graph of S₈* (Othello-analog):
+  three-condition val_ppl gradient lands cleanly (5.90 / 6.72 / 6.75
+  real / within / global), but partial-product probe collapses to
+  lexical-only signal (33% mean across element-probes; trained ≈
+  untrained). The self-avoiding constraint apparently does not force
+  full-product encoding — local recent-state info suffices for picking a
+  legal next move. Probe code is NOT obviously broken (it finds the
+  lexical signal that exists) but the task isn't a clean known-positive.
+
+**Effort:** 1–2 days. ~~Lowest-risk; guaranteed-positive domain by construction.~~
+Originally framed as lowest-risk; actual run showed designing a
+synthetic task that *forces* permutation tracking is harder than
+expected.
+- `data/prepare_symgroup.py` synthetic generator with `--self_avoiding`
+  flag. ✅ Done.
+- Train small.py; probe via `eval/probe_symgroup.py`. ✅ Done.
+- **Acceptance:** node-level linear probe accuracy > 0.9 for n ≤ 8. ❌
+  Not met (achieved ~0.33 mean; trained ≈ untrained).
+- **Next:** redesign task so each move's legality depends on *full*
+  history (not just recent), or pre-pend an initial-permutation tokenized
+  prefix that must be tracked. Out of scope for current sessions.
 
 ### Milestone 2 — Music: three load-bearing probes, three independent bets
 
-**Status (2026-05-25):** First-pass execution DONE. Pipeline + eval suite +
-three trained models + three-condition gradient measured. See
-`updateMay25.md` for the full writeup. Headline: voice-leading rate (a
-new metric, not enumerated in the original outcome matrix) produced the
-clean three-condition gradient pivot.md hoped for (96.25% → 64.33% → 55.91%
-strict); mode probe matched the cities-analogue prediction; beat probe
-inconclusive (chance in all conditions — TBD undertraining vs no-encoding
-vs thin-probe). Joint outcome doesn't fit any of A–D cleanly. Open work:
-heavier probes + retrain to resolve the beat-probe null.
+**Status (2026-05-25 + 2026-05-26):** First-pass + heavy-probe followup
+DONE. See `updateMay25.md` and `updateMay26.md`. Headlines after both
+sessions:
+- **Voice-leading gradient is the load-bearing positive** (96.25% / 64.33%
+  / 55.91% strict, real / within / global) — the cities valid-edge
+  analog.
+- **Cities-style reversal replicates** — within-shuffled model has HIGHER
+  beat-probe PIECE-LEVEL accuracy than real model (MLP 42% vs 33%).
+- **Mode probe is pure lexical artifact** — trained ≈ untrained across all
+  three conditions; the original "60% cities-analogue leak" claim was a
+  random-embedding artifact, not a learned signal.
+- **Joint outcome A (predicted mixed verdict) does NOT land.** The
+  observed pattern is closer to "two-domain methodology cautionary tale"
+  than to any of the four pivot.md outcomes.
 
 **Effort:** 2–3 days. Highest scientific value per day in the portfolio.
 - `data/prepare_music.py` using `music21` Bach chorales.
