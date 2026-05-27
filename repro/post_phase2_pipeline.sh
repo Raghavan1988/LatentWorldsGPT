@@ -53,7 +53,55 @@ train_maze data/maze_8x8_within_shuffled checkpoints/maze_8x8_within_shuffled
 train_maze data/maze_8x8_global_shuffled checkpoints/maze_8x8_global_shuffled
 
 log "=== Phase 4-c TRAINING COMPLETE ==="
+
+# ────────────────────────────────────────────────────────────────────
+# (3) Phase 4-d: maze probe + transplant (multi-seed) on 3 conditions
+# ────────────────────────────────────────────────────────────────────
+log "=== Phase 4-d: maze probe + transplant on 3 conditions ==="
+
+OUT4D="checkpoints/multiseed_phase4d"
+mkdir -p "$OUT4D"
+
+run_unit() {
+    local out="$1"; local sentinel="$2"; shift 2
+    if [ -f "$out" ] && grep -q "$sentinel" "$out" 2>/dev/null; then
+        log "  SKIP $out"
+        return 0
+    fi
+    local tmp="${out}.tmp"
+    log "  RUN  $out"
+    python -u "$@" > "$tmp" 2>&1
+    if [ $? -eq 0 ] && grep -q "$sentinel" "$tmp" 2>/dev/null; then
+        mv "$tmp" "$out"
+    else
+        log "  WARN $out failed; leaving tmp at $tmp"
+    fi
+}
+
+for cond in "" "_within_shuffled" "_global_shuffled"; do
+    ckpt="checkpoints/maze_8x8${cond}/best.pt"
+    data="data/maze_8x8${cond}"
+    tag="maze${cond}"
+    if [ ! -f "$ckpt" ]; then
+        log "  SKIP $tag (no checkpoint)"
+        continue
+    fi
+    # Probe (5 seeds, 4 targets, both splits)
+    run_unit "$OUT4D/probe_${tag}.log" "HEADLINE" \
+        eval/probe_maze.py --ckpt "$ckpt" --data_dir "$data" --seeds 0 1 2 3 4
+    # Transplant at the predicted peak layer (L2-L3 region per predictions);
+    # we sweep across all layers in a separate per-layer step below.
+    for L in 0 1 2 3 4 5; do
+        for S in 0 1 2 3 4; do
+            run_unit "$OUT4D/transplant_${tag}_layer${L}_seed${S}.log" "Effect-size summary" \
+                eval/transplant_maze.py --ckpt "$ckpt" --data_dir "$data" --layer "$L" --seed "$S"
+        done
+    done
+done
+
+log "=== Phase 4-d COMPLETE ==="
 log "=== POST-PHASE-2 PIPELINE COMPLETE ==="
-log "Next steps (manual or via separate runner):"
-log "  - Phase 4-d: run probe + transplant + per-layer ablation on maze models"
-log "  - Phase 4-e: write results_maze_navigation.md confirm/falsify table"
+log "Next steps (manual):"
+log "  - Aggregate Phase 4-d results"
+log "  - Write results_maze_navigation.md confirm/falsify table comparing"
+log "    observed values to predictions_maze_navigation.md"
