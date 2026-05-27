@@ -101,13 +101,50 @@ the effect is still essentially complete (~88 % transplant lift).
 
 ## Experiment 2 — Music transplant on the real expanded model
 
-New file: `eval/transplant_music.py`. Music's analog of cities' graph
-neighbors: for position p, the "recent same-voice pitch for the next
-slot" (RSVP) at position p−3 is what the model should be conditioned on
-when predicting position p+1. Donors with different RSVPs are
-substituted; we score the probability mass on pitches within ±7
-semitones of A's RSVP (= unpatched expectation) vs B's RSVP (= what
-the transplant should push toward) vs C's RSVP (= random control).
+### What is RSVP?
+
+"Recent Same-Voice Pitch" — a term made up for this project, not standard
+music theory. Concrete:
+
+Bach chorale tokenization is 4 voices per beat in fixed order:
+
+```
+Position:   0    1    2    3    4    5    6    7    8    9    10   11   12   13
+Token:     BOS  S₁   A₁   T₁   B₁   S₂   A₂   T₂   B₂   S₃   A₃   T₃   B₃   S₄
+                ↑                   ↑
+                Sop @ beat 1        Sop @ beat 2  (= S₁'s "RSVP for next slot")
+```
+
+For any position p, RSVP = the pitch at position p − 3 — i.e., the pitch
+that will be the *same voice's previous note* at the next slot p + 1.
+
+Worked example:
+- Model is at position 5 (Soprano at beat 2), about to predict position 6
+  (Alto at beat 2).
+- Alto's same-voice previous note is at position 6 − 4 = 2 (Alto at beat 1).
+- So **RSVP for predicting position 6 = pitch at position 2 = Alto at beat 1**.
+
+### Why RSVP matters
+
+Voice-leading in Bach is locally predictable: each voice tends to move by
+small intervals (96 % within ±7 semitones per our valid-voice-step rate).
+To predict Alto at beat 2 well, the model mainly needs to know **Alto at
+beat 1** — that's the RSVP. The model has to encode this in its residual
+stream to do voice-leading.
+
+RSVP is the most LOCAL music feature — it lives at a specific token at a
+deterministic offset (−4 from the slot being predicted). Beat / mode /
+chord, by contrast, are abstract / global features that require
+multi-token computation or piece-level inference.
+
+### Transplant setup
+
+`eval/transplant_music.py`. Music's analog of cities' graph neighbors:
+for position p, the RSVP (= pitch at p−3) is what the model should be
+conditioned on when predicting position p+1. Donors with different RSVPs
+are substituted; we score the probability mass on pitches within ±7
+semitones of A's RSVP (= unpatched expectation) vs B's RSVP (= what the
+transplant should push toward) vs C's RSVP (= random control).
 
 Run on `checkpoints/music_expanded/best.pt` (val_ppl 4.37, voice-leading
 98.99 %), layer 1 of 3:
