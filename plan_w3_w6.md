@@ -2,17 +2,20 @@
 
 After the W1+W2 rigor pass (multi-seed probes, multi-seed transplants,
 per-layer transplant ablation, linear-vs-MLP, symgroup methodology
-resolution), the remaining work is structured around five themes:
+resolution), the remaining work is structured around six themes:
 
 1. **Sharpen what we already have** (per-domain ablations, scale on cities)
 2. **One ex-ante predictive demonstration** on a not-yet-tested task
 3. **Pre-registration of predictions** at the start of W4
-4. **Methodology-first writeup framing**
-5. **Draft + revise**
+4. **Complementary causal-interp analyses** (DLA, logit lens, zero-ablation per-layer) — fills in the conventional mech-interp toolkit alongside transplant
+5. **Methodology-first writeup framing**
+6. **Draft + revise**
 
 These map to weeks 3–6 below. Lower-leverage items (LSTM baseline,
-adversarial probes) are explicitly de-scoped; they don't move the
-quality bar enough to justify the work.
+adversarial probes, path patching, composition scores, causal
+scrubbing) are explicitly de-scoped; they don't move the quality bar
+enough to justify the work, given the macro-level encoding-existence
+claim we're making.
 
 ## Week 3 — Scale + pre-register
 
@@ -24,6 +27,9 @@ ex-ante predictions for W4.
 | W3-a | Pre-registration document. Create `predictions.md` listing, per upcoming W4 experiment, the exact prediction (probe accuracy band, layer-of-peak, transplant lift band) and the criterion for confirm/falsify. Timestamped, git-committed. Read-only after lockdown. | 2 h | +2-3% |
 | W3-b | Othello championship-games retrain (Task 56). Replace 50k random uniform games with championship games; push trained MLP from 0.94 toward published 0.95+. | ~1 day training (GPU rental) | small (tightens a specific comparison) |
 | W3-c | Cities scale demonstration. Train one larger model (~50M params) on full Manhattan; show probe + transplant patterns persist at scale. | ~2-3 days GPU rental, $20-50 | +3-4% |
+| W3-d | **Direct Logit Attribution per-layer per-domain**. For each trained model, decompose the residual into per-component contributions to the logit for the correct next-move / next-pitch / next-phase token, summed at each layer. Output: `eval/dla.py` + `figs/week3_dla_per_domain.png` showing each layer's direct contribution to the valid-next-token logit. Pairs naturally with transplant (DLA = component-wise direct contribution, transplant = causal effect of replacement). | ½ day | +2% (adds a conventional complementary view) |
+| W3-e | **Logit lens curve per-domain**. Apply the trained unembed to each layer's residual stream (skipping subsequent blocks); plot per-layer next-token accuracy. Output: `eval/logit_lens.py` + `figs/week3_logit_lens_per_domain.png`. Single figure makes it visible at a glance where the model commits to its answer per layer. | ½ day | +2% |
+| W3-f | **Zero-ablation per-layer per-domain**. Standard complement to activation patching: for each layer, zero the residual output of that layer's blocks and measure the drop in valid-next-token rate. Output: `eval/zero_ablation.py` + `figs/week3_zero_ablation_per_domain.png`. Pairs with transplant as the destruction-vs-restoration mirror image. | ½ day | +2% |
 
 ## Week 4 — Ex-ante prediction experiment
 
@@ -53,8 +59,9 @@ the per-domain results.
 |---|---|---|
 | W5-a | Procrustes-aligned cities map overlay (`viz/overlay.py`). Real vs decoded vs destroyed-structure side-by-side. The visual hook. | 1 day |
 | W5-b | Per-domain transplant lift figure consolidating W2 + W4 results. Already started in `figs/week2_transplant_lift.png`; expand with W4 data. | ½ day |
-| W5-c | First-draft writeup with methodology-first framing. Lead the abstract with the N-criterion as the contribution. Domains are validation. Ex-ante prediction is the closing argument. | 3-4 days |
-| W5-d | Internal review: get 1-2 outside readers on the draft, incorporate edits. | 1-2 days |
+| W5-c | "Complementary causal-interp analyses" section in the writeup. Show DLA, logit lens, and zero-ablation per-layer figures (from W3-d/e/f) alongside the transplant per-layer figure as a 4-panel consolidated view. Explain explicitly: "Our claim is at the encoding-existence level, not the circuit-decomposition level. We use probing for descriptive evidence and activation patching for causal evidence; finer-grained tools (path patching, causal scrubbing, composition scores) target a different question." | 1 day |
+| W5-d | First-draft writeup with methodology-first framing. Lead the abstract with the N-criterion as the contribution. Domains are validation. Ex-ante prediction is the closing argument. | 3-4 days |
+| W5-e | Internal review: get 1-2 outside readers on the draft, incorporate edits. | 1-2 days |
 
 ## Week 6 — Final draft + final revisions
 
@@ -73,9 +80,16 @@ end-to-end.
 - **LSTM baseline**. Destroyed-structure controls + 5-domain evidence
   already do the architectural-specificity work. Adding LSTM is
   defensive, not load-bearing.
-- **SAE / causal scrubbing / fancier interp methods**. The simplicity
+- **Path patching, composition scores, eigenvalue scores**. These
+  target circuit-structure questions (how a known feature is
+  computed), not encoding-existence questions (whether the feature
+  is encoded at all). Different research program.
+- **SAEs / causal scrubbing / fancier interp methods**. The simplicity
   of classical methods is a feature here — it lets the comparison span
   domains cleanly.
+- **Max-activating dataset examples, feature visualization**. Single-
+  feature interpretation tools; not load-bearing for the cross-domain
+  encoding claim.
 - **Mainline-LLM probe** (Llama-class). Out of compute budget; the
   scale-demo in W3-c on cities does the necessary scaling work.
 - **Maze, TCP, code-exec all three** — pick ONE for W4 ex-ante.
@@ -83,11 +97,15 @@ end-to-end.
 ## Critical path
 
 W3-a (pre-registration setup) → W4-b (write predictions) → W4-c-d-e
-(run experiments and record outcomes) → W5-c (writeup framing) →
+(run experiments and record outcomes) → W5-d (writeup framing) →
 W6-c (final pass).
 
-W3-b and W3-c are parallel-able with the W4 work if compute budget
-allows.
+W3-b (Othello retrain) and W3-c (cities scale) are parallel-able with
+the W4 work if compute budget allows.
+
+W3-d/e/f (DLA, logit lens, zero-ablation) operate on the existing
+W1+W2 checkpoints. No new training needed; ~1.5 days total. They feed
+directly into W5-c (complementary causal-interp analyses section).
 
 ## Acceptance criteria for "ready to share"
 
