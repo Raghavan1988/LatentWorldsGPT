@@ -24,7 +24,11 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from model.model import GPT, GPTConfig
+import sys
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent / 'model'))
+from model import GPT, GPTConfig  # noqa: E402
 
 DEVICE = "mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu")
 
