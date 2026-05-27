@@ -28,31 +28,56 @@ from earlier today was **wrong**. The data now shows:
   (666 / 4,546 / 11,371) or visits/token (~1,600 / ~590 / ~260).
 - **Within Othello, also consistent at much smaller magnitude**: 5k corpus
   +0.235, 50k corpus +0.108. Smaller variation within domain.
-- **Music transplant lift is BIG**: +0.804 — comparable to cities, far
-  bigger than Othello.
+- **Music transplant is BIG, but ONLY on the recent-same-voice-pitch
+  feature (NOT on beat / mode / chord)**: +0.804 on RSVP. Beat / mode /
+  chord remain null at the classification-probe level (trained ≈
+  untrained, unchanged from `updateMay26_afternoon.md`).
+
+> **⚠ Common misreading to avoid.** "Music transplant lift +0.804" does
+> NOT mean beat or mode or chord is now encoded. We did NOT transplant a
+> beat-encoding direction or a mode-encoding direction. We transplanted
+> the residual at a position where the *recent same-voice pitch* (RSVP,
+> i.e., the pitch 4 positions earlier in the same voice) is well-defined
+> — that's a *local-sequence feature* underlying voice-leading
+> prediction, not a structural / measure-level feature.
+
+> **Two distinct music features tested in this project, with opposite
+> outcomes:**
+>
+> | Feature | Test | Result | Status |
+> |---|---|---:|---|
+> | **Beat-in-measure** (1/2/3/4) | 4-class classification probe | ~27 % (chance 25 %), trained ≈ untrained | **NULL — not encoded** |
+> | **Mode** (major / minor) | 2-class classification probe | ~70 %, trained ≈ untrained (lexical via pitch distribution) | **NULL — not encoded** |
+> | **Chord** (Roman-numeral) | multi-class classification probe | inconclusive, trained ≈ untrained | **NULL — not encoded** |
+> | **Recent same-voice pitch (RSVP)** | Activation transplant on residual stream | Lift +0.804, 100 % specificity vs random control | **POSITIVE — encoded and causally used** |
+>
+> The music model encodes the feature it needs for next-pitch prediction
+> (recent same-voice pitch — the basis of voice-leading) and does NOT
+> encode the features it doesn't need (beat / mode / chord). All four
+> tests on the SAME model.
 
 **The split is NOT "cities works, Othello partially works."** It is
-**token-local encoding (cities, music) vs prefix-derived encoding
+**token-local encoding (cities, music-RSVP) vs prefix-derived encoding
 (Othello)**:
 
 - Cities token = node identity; the residual at position p directly
   carries "I am at node A." Patching replaces this cleanly.
-- Music: the relevant feature is the previous same-voice pitch (4
-  positions back, a specific token). The residual at position p
-  summarizes this. Patching shifts predictions cleanly.
+- Music RSVP: the relevant feature is the pitch 4 positions back. The
+  residual at position p summarizes this. Patching shifts predictions
+  cleanly.
 - Othello: each token is a move, but the board state must be DERIVED
   from many prior moves. The residual is a SUMMARY of that derivation,
   but the prefix tokens still leak board info via attention. Patching
   shifts the summary, but the attention path through prior tokens
   remains intact → smaller effect.
 
-**Music's null on classification probes is now causally demonstrated as
-principled.** The music model encodes the recent same-voice pitch (used
-for voice-leading: transplant +0.804). It does NOT encode beat / mode /
-chord (classification probes trained ≈ untrained). Same model. Same
-framework. **Different feature targets produce opposite outcomes
-because of what the next-pitch objective requires.** This is the N
-criterion as a clean empirical diagnostic.
+**Music's null on classification probes (beat/mode/chord) is now
+causally demonstrated as principled.** The music model encodes RSVP
+(used for voice-leading: transplant +0.804). It does NOT encode beat /
+mode / chord (classification probes trained ≈ untrained, unchanged).
+Same model. Same framework. **Different feature targets produce
+opposite outcomes because of what the next-pitch objective requires.**
+This is the N criterion as a clean empirical diagnostic.
 
 ---
 
@@ -161,27 +186,41 @@ mechanistic difference from cities and music.
 
 ## The N-criterion is now empirically demonstrated within music
 
-The cleanest result of the session. Music has TWO probe targets we've
-tested:
+The cleanest result of the session. **One music model, four probe
+targets, two opposite outcomes** (this is the within-domain mixed
+verdict pivot.md M2 originally hypothesized — re-emphasizing for
+clarity):
 
 | Music probe target | Test type | Result | What it shows |
 |---|---|---|---|
-| Voice-leading state (recent same-voice pitch) | **Causal: transplant** | **+0.804 lift, 100 % specificity** | Encoded AND used by the model |
-| Beat / mode / chord | Correlational: classification probe | Trained ≈ untrained (chance / lexical) | NOT encoded |
+| **Recent same-voice pitch (RSVP)** | **Causal: activation transplant** | **+0.804 lift, 100 % specificity** | **Encoded AND used by the model** |
+| Beat-in-measure (1/2/3/4) | Correlational: 4-class classification probe | ~27 % (chance 25 %), trained ≈ untrained | **NOT encoded** |
+| Mode (major/minor) | Correlational: 2-class classification probe | ~70 %, trained ≈ untrained (lexical-only via pitch distribution) | **NOT encoded** (artifact only) |
+| Chord (Roman-numeral) | Correlational: multi-class classification probe | inconclusive, trained ≈ untrained | **NOT encoded** |
+
+> **To be crystal clear: beat is NOT a positive result.** Beat probe is
+> NULL — trained ≈ untrained at chance. The positive transplant
+> (+0.804) is on a different feature entirely: the recent same-voice
+> pitch (RSVP). RSVP is a *local-sequence feature* (the pitch 4
+> positions back in the same voice slot), not a *structural / measure-
+> level feature* like beat.
 
 **Same model. Same framework. Different feature targets. Opposite
-outcomes.** The voice-leading feature is required for next-pitch
-prediction (the model HAS to encode it to do its job), so it shows up
-both correlationally and causally. Beat/mode/chord is NOT required
-(the model can predict voice-leading without explicitly representing
-beat), so it doesn't show up in either test.
+outcomes.** RSVP is required for next-pitch prediction (the model HAS
+to encode it to do voice-leading), so it shows up both correlationally
+(implicitly via voice-leading rate 98.99 %) and causally (transplant
++0.804). Beat / mode / chord are NOT required (the model can predict
+voice-leading by attending to the pitch 4 positions back, without
+explicitly representing the beat number or mode label), so they don't
+show up in any test.
 
 This is the within-domain mixed verdict pivot.md M2 originally
-hypothesized. We didn't see it on the original beat/mode/chord probes
-because those features aren't what music encodes. Voice-leading turns
-out to be the music analog of cities' graph adjacency or Othello's
-board state — the load-bearing structural state the model genuinely
-encodes.
+hypothesized — **but on different features than originally targeted**.
+Beat was *supposed* to be the positive (Othello-like). It isn't.
+RSVP turned out to be the actual positive. The lesson: the right
+question for any new domain isn't "do beat / mode / chord get
+encoded?" — it's "what features does the model NEED to encode to do
+its job, and does the residual stream contain them?"
 
 ---
 
