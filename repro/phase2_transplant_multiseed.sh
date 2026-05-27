@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# W2: multi-seed transplant retrofit across all 4 domains.
+# Phase 2: multi-seed transplant retrofit across all 4 domains.
 # Runs each transplant script with 5 seeds, logs each invocation to a
 # separate file under checkpoints/multiseed_w2/.
 set -euo pipefail

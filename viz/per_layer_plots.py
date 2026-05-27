@@ -91,7 +91,7 @@ def plot_cities():
     ax.set_ylim(0, 1)
     ax.legend(loc="best", fontsize=8)
     ax.grid(True, alpha=0.3)
-    out = FIG_DIR / "week1_cities_per_layer.png"
+    out = FIG_DIR / "phase1_cities_per_layer.png"
     fig.tight_layout()
     fig.savefig(out, dpi=140)
     plt.close(fig)
@@ -131,7 +131,7 @@ def plot_othello():
     ax.set_ylim(0.5, 1.0)
     ax.legend(loc="best", fontsize=9)
     ax.grid(True, alpha=0.3)
-    out = FIG_DIR / "week1_othello_per_layer.png"
+    out = FIG_DIR / "phase1_othello_per_layer.png"
     fig.tight_layout()
     fig.savefig(out, dpi=140)
     plt.close(fig)
@@ -173,7 +173,7 @@ def plot_flight():
     ax.set_ylim(0, 1)
     ax.legend(loc="best", fontsize=9)
     ax.grid(True, alpha=0.3)
-    out = FIG_DIR / "week1_flight_per_layer.png"
+    out = FIG_DIR / "phase1_flight_per_layer.png"
     fig.tight_layout()
     fig.savefig(out, dpi=140)
     plt.close(fig)
@@ -226,7 +226,7 @@ def plot_music():
             ax.set_ylim(0.2, 0.4)
         ax.legend(loc="best", fontsize=8)
     fig.suptitle("Music probes — piece-level MLP accuracy (mean ± std over 5 seeds)\nsolid markers = trained, faint × = untrained")
-    out = FIG_DIR / "week1_music_per_layer.png"
+    out = FIG_DIR / "phase1_music_per_layer.png"
     fig.tight_layout()
     fig.savefig(out, dpi=140)
     plt.close(fig)

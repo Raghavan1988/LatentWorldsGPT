@@ -238,3 +238,4 @@ cache/
 # Claude Code per-user settings (never tracked; project-shared `.claude/settings.json` IS allowed)
 **/.claude/settings.local.json
 **/.claude/scheduled_tasks.lock
+.DS_Store

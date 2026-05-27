@@ -1,4 +1,4 @@
-"""Generate a per-domain transplant-lift bar chart from the W2 multi-seed logs."""
+"""Generate a per-domain transplant-lift bar chart from the  Phase 2 multi-seed logs."""
 import re
 from collections import defaultdict
 from pathlib import Path
@@ -86,7 +86,7 @@ def main():
     from matplotlib.patches import Patch
     legend = [Patch(facecolor=c, label=d) for d, c in DOMAIN_COLORS.items()]
     ax.legend(handles=legend, loc="upper right")
-    out = FIG_DIR / "week2_transplant_lift.png"
+    out = FIG_DIR / "phase2_transplant_lift.png"
     fig.tight_layout()
     fig.savefig(out, dpi=140)
     plt.close(fig)

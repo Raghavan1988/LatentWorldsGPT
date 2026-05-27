@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# W3-d/e/f: run DLA + logit lens + zero-ablation across all 12 (domain ×
+# Phase 3-d/e/f: run DLA + logit lens + zero-ablation across all 12 (domain ×
 # condition) pairs, multi-seed. Output per-run logs to checkpoints/multiseed_w3/.
 #
 # RESUMABLE: same skip-if-complete pattern as repro/w2_finish.sh. Each
@@ -35,7 +35,7 @@ run_unit() {
     fi
 }
 
-# All 12 (domain × condition) pairs that have existing W1+W2 checkpoints
+# All 12 (domain × condition) pairs that have existing Phase 1+Phase 2 checkpoints
 declare -a CONDS=(
     "cities_london_real|checkpoints/best.pt|data/london_city"
     "cities_london_within|checkpoints/london_shuffled/best.pt|data/london_shuffled"
@@ -51,25 +51,25 @@ declare -a CONDS=(
     "music_global|checkpoints/music_expanded_global_shuffled/best.pt|data/music_expanded_global_shuffled"
 )
 
-log "=== W3-e: LOGIT LENS (12 conditions) ==="
+log "=== Phase 3-e: LOGIT LENS (12 conditions) ==="
 for entry in "${CONDS[@]}"; do
     IFS='|' read -r tag ckpt data <<< "$entry"
     run_unit "$OUT/logit_lens_${tag}.log" "HEADLINE — best lens layer" \
         eval/logit_lens.py --ckpt "$ckpt" --data_dir "$data"
 done
 
-log "=== W3-d: DIRECT LOGIT ATTRIBUTION (12 conditions) ==="
+log "=== Phase 3-d: DIRECT LOGIT ATTRIBUTION (12 conditions) ==="
 for entry in "${CONDS[@]}"; do
     IFS='|' read -r tag ckpt data <<< "$entry"
     run_unit "$OUT/dla_${tag}.log" "HEADLINE — largest direct contribution" \
         eval/dla.py --ckpt "$ckpt" --data_dir "$data"
 done
 
-log "=== W3-f: ZERO-ABLATION block-granularity (12 conditions) ==="
+log "=== Phase 3-f: ZERO-ABLATION block-granularity (12 conditions) ==="
 for entry in "${CONDS[@]}"; do
     IFS='|' read -r tag ckpt data <<< "$entry"
     run_unit "$OUT/zero_ablation_${tag}.log" "HEADLINE — most important block" \
         eval/zero_ablation.py --ckpt "$ckpt" --data_dir "$data" --granularity block
 done
 
-log "=== ALL W3 COMPLEMENTARY-INTERP RUNS COMPLETE ==="
+log "=== ALL  Phase 3 COMPLEMENTARY-INTERP RUNS COMPLETE ==="

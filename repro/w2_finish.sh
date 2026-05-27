@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# W2 finishing pipeline — per-layer transplant ablation + symgroup multi-seed.
+# Phase 2 finishing pipeline — per-layer transplant ablation + symgroup multi-seed.
 #
 # RESUMABLE: each unit writes to its own log file with a sentinel marker
 # at the end. On re-run we skip units whose log already ends with the
@@ -150,4 +150,4 @@ for entry in "${SYMGROUP_CONDS[@]}"; do
 done
 
 log "=== SYMGROUP MULTI-SEED COMPLETE ==="
-log "=== ALL W2-FINISH WORK COMPLETE ==="
+log "=== ALL Phase 2 FINISH WORK COMPLETE ==="

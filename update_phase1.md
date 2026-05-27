@@ -1,4 +1,4 @@
-# Week 1 Multi-Seed Retrofit — Update (2026-05-27)
+# Phase 1 Multi-Seed Retrofit — Update (2026-05-27)
 
 All probe headline numbers across the four trained domains (cities, Othello,
 flight, music) have been recomputed under a multi-seed protocol with two

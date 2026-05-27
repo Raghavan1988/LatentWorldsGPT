@@ -1,6 +1,6 @@
-# Week 2 — Causal Rigor + Linear-Encoding Formalization (2026-05-27)
+# Phase 2 — Causal Rigor + Linear-Encoding Formalization (2026-05-27)
 
-Three follow-ups to Week 1. The probe-side multi-seed retrofit closed the
+Three follow-ups to Phase 1. The probe-side multi-seed retrofit closed the
 descriptive side; this week covers (a) the same protocol applied to the
 causal-intervention scripts, (b) a direct linear-vs-MLP comparison across
 all 4 domains, and (c) the symgroup methodology calibration that was
@@ -102,7 +102,7 @@ Nanda 2023's strong claim is that the world state in Othello-GPT is
 encoded **linearly**: a single linear projection of the residual stream
 recovers it, not just a non-linear MLP. The standard test is the
 linear-vs-MLP probe gap at the same layer. We apply this test across
-all 4 domains, using the multi-seed Week 1 numbers on the honest split.
+all 4 domains, using the multi-seed Phase 1 numbers on the honest split.
 
 | Domain × Condition       | Linear MLP        | MLP MLP        | Δ (MLP − Lin) | Best layer |
 |--------------------------|-------------------|----------------|---------------|------------|
@@ -176,7 +176,7 @@ This is the most we can extract from the current 50k-corpus
 self-avoiding-walk setup without (a) a larger model, (b) a different
 target formulation (e.g., predict only the final permutation element
 rather than per-element accuracy), or (c) a different group structure
-than S_8. None of those are W2 work; the calibration question itself
+than S_8. None of those are  Phase 2 work; the calibration question itself
 is now resolved.
 
 ## What changed in committed artifacts
@@ -184,13 +184,13 @@ is now resolved.
 - `repro/transplant_multiseed.sh` — runner for all 5 transplant scripts × 5 seeds
 - `viz/transplant_aggregate.py` — parser + summary table generator
 - `checkpoints/multiseed_w2/` — 65 per-run logs + this aggregate
-- `update_week2.md` (this file)
+- `update_phase2.md` (this file)
 
-## What W2 leaves open
+## What  Phase 2 leaves open
 
-- Per-layer transplant ablation (W3 candidate): at which layer does the
-  transplant lift peak? Mirrors the per-layer probe figures from W1.
+- Per-layer transplant ablation (Phase 3 candidate): at which layer does the
+  transplant lift peak? Mirrors the per-layer probe figures from Phase 1.
 - Othello championship-games retrain (Task 56 still pending): pushes
   trained MLP from 0.9399 toward the published 0.95+.
-- Per-domain transplant figures (analogous to `figs/week1_*_per_layer.png`):
+- Per-domain transplant figures (analogous to `figs/phase1_*_per_layer.png`):
   bar chart with 95 % CI per condition. Cheap; ~30 min.
