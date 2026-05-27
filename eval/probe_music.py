@@ -51,7 +51,7 @@ import csv
 import pickle
 import sys
 import time
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -398,14 +398,8 @@ def main():
                    help="legacy single-seed flag; use --seeds instead")
     p.add_argument("--seeds", type=int, nargs="+", default=None,
                    help="one or more probe seeds (default [0]). Each seed "
-                        "re-runs probe-data sampling + classifier training; "
-                        "results aggregated across seeds.")
-    p.add_argument("--report_mode", choices=("max", "mean", "both"),
-                   default="both",
-                   help="how to summarize per-layer accuracies in the "
-                        "headline. 'max' picks the best layer (the original, "
-                        "inflated default). 'mean' reports the cross-layer "
-                        "mean. 'both' shows both side-by-side.")
+                        "re-runs untrained init + probe-data sampling + "
+                        "classifier training; results aggregated across seeds.")
     p.add_argument("--targets", nargs="+", default=list(TARGET_NAMES),
                    choices=TARGET_NAMES, help="which probe targets to run")
     p.add_argument("--skip_untrained", action="store_true")
@@ -417,21 +411,19 @@ def main():
     if args.seed is None:
         args.seed = args.seeds[0]
 
-    torch.manual_seed(args.seeds[0])
-    np.random.seed(args.seeds[0])
-
     device = ("cuda" if torch.cuda.is_available()
               else "mps" if torch.backends.mps.is_available()
               else "cpu")
     print(f"device: {device}")
+    print(f"running {len(args.seeds)} seed(s): {args.seeds}")
 
     data_dir = Path(args.data_dir)
 
     print(f"\nLoading checkpoint: {args.ckpt}")
     ckpt = torch.load(args.ckpt, map_location=device, weights_only=False)
     config = GPTConfig(**ckpt["config"])
-    trained_model = GPT(config).to(device); trained_model.eval()
-    untrained_model = None if args.skip_untrained else GPT(config).to(device).eval()
+    trained_model = GPT(config).to(device); trained_model.load_state_dict(ckpt["model_state"])
+    trained_model.eval()
     print(f"  iter={ckpt.get('iter','?')}  val_ppl={ckpt.get('val_perplexity',float('nan')):.4f}"
           f"  vocab_size={config.vocab_size}")
 
@@ -440,6 +432,13 @@ def main():
     n_target_rows = len(targets["beat"])
     n_pieces = len(set(piece_idx_of.values()))
     print(f"  {n_target_rows:,} labeled positions across {n_pieces} pieces (val+gen)")
+
+    # Pre-compute chord vocab from the side table (deterministic across seeds).
+    all_chord_strs = set(targets["chord"].values())
+    chord_classes = ["?"] + sorted({c for c in all_chord_strs if c != "?"})
+    chord_to_idx = {c: i for i, c in enumerate(chord_classes)}
+    n_chord_classes = len(chord_classes)
+    print(f"  chord vocab: {n_chord_classes} classes (incl. '?' unanalyzable)")
 
     print(f"\nLoading val + gen streams ...")
     with open(data_dir / "meta.pkl", "rb") as f:
@@ -452,165 +451,160 @@ def main():
     for s, arr in streams.items():
         print(f"  {s}.bin: {len(arr):,} tokens")
 
-    def build(model, label):
-        print(f"\nBuilding probe dataset for {label} model ...")
-        t0 = time.time()
-        out = build_probe_dataset(
-            model, streams, targets, piece_idx_of,
-            config.block_size, args.n_positions, device, rng_seed=args.seed,
-        )
-        print(f"  collected {len(out[1]):,} positions across {len(out[0])} layers"
-              f"  ({time.time()-t0:.1f}s)")
-        return out
+    # Accumulator: all_results[tgt][cond][L] = list of (lin_mean, mlp_mean) tuples per seed
+    conditions = ["pos_trained", "piece_trained", "pos_untrained", "piece_untrained"]
+    all_results = {t: {c: defaultdict(list) for c in conditions} for t in args.targets}
+    majorities = {}  # per target; computed once on first seed
 
-    X_t, y_mode_t, y_chord_t, y_beat_t, pieces_t = build(trained_model, "TRAINED")
-    if untrained_model is not None:
-        X_u, y_mode_u, y_chord_u, y_beat_u, pieces_u = build(untrained_model, "UNTRAINED")
+    for seed in args.seeds:
+        print(f"\n{'#'*78}\n# SEED {seed}\n{'#'*78}")
+        torch.manual_seed(seed); np.random.seed(seed)
 
-    # Splits — built on trained-model positions; untrained re-derives its own.
-    pos_train_t, pos_test_t = position_split(
-        len(y_beat_t), args.probe_train_frac, args.seed)
-    print(f"\nPOSITION-LEVEL split: train={len(pos_train_t):,}  test={len(pos_test_t):,}")
-    if untrained_model is not None:
-        pos_train_u, pos_test_u = position_split(
-            len(y_beat_u), args.probe_train_frac, args.seed)
+        untrained_model = None if args.skip_untrained else GPT(config).to(device).eval()
 
-    piece_train_t = piece_test_t = pi_t_stats = None
-    if not args.skip_piece_split:
-        piece_train_t, piece_test_t, pi_t_stats = piece_split(
-            pieces_t, args.probe_train_frac, args.seed)
-        print(f"PIECE-LEVEL split:  train_pieces={pi_t_stats['n_train_pieces']}"
-              f"  test_pieces={pi_t_stats['n_test_pieces']}  "
-              f"(train_pos={len(piece_train_t):,}  test_pos={len(piece_test_t):,})")
+        def build(model, label):
+            print(f"\nBuilding probe dataset for {label} (seed={seed}) ...")
+            t0 = time.time()
+            out = build_probe_dataset(
+                model, streams, targets, piece_idx_of,
+                config.block_size, args.n_positions, device, rng_seed=seed,
+            )
+            print(f"  collected {len(out[1]):,} positions across {len(out[0])} layers"
+                  f"  ({time.time()-t0:.1f}s)")
+            return out
+
+        X_t, y_mode_t, y_chord_t, y_beat_t, pieces_t = build(trained_model, "TRAINED")
         if untrained_model is not None:
-            piece_train_u, piece_test_u, _ = piece_split(
-                pieces_u, args.probe_train_frac, args.seed)
+            X_u, y_mode_u, y_chord_u, y_beat_u, pieces_u = build(untrained_model, "UNTRAINED")
 
-    # Encode chord-string labels to class IDs (shared mapping across models).
-    chord_strs = list(y_chord_t)
-    if untrained_model is not None:
-        chord_strs += list(y_chord_u)
-    classes = ["?"] + sorted({c for c in chord_strs if c != "?"})
-    chord_to_idx = {c: i for i, c in enumerate(classes)}
-    y_chord_t_int = np.array([chord_to_idx[c] for c in y_chord_t], dtype=np.int64)
-    n_chord_classes = len(classes)
-    if untrained_model is not None:
-        y_chord_u_int = np.array([chord_to_idx[c] for c in y_chord_u], dtype=np.int64)
+        pos_train_t, pos_test_t = position_split(
+            len(y_beat_t), args.probe_train_frac, seed)
+        if untrained_model is not None:
+            pos_train_u, pos_test_u = position_split(
+                len(y_beat_u), args.probe_train_frac, seed)
 
-    target_specs = {
-        "mode":  (y_mode_t,    2),
-        "chord": (y_chord_t_int, n_chord_classes),
-        "beat":  (y_beat_t,    5),   # values are 1..4; using n_classes=5 covers it
-    }
-
-    summaries = {}  # target -> dict of (split -> {linear,mlp})
-    for tgt in args.targets:
-        y, ncls = target_specs[tgt]
-        # class-balance sanity
-        cnts = Counter(y.tolist())
-        majority = max(cnts.values()) / len(y)
-        print(f"\n[{tgt}] majority-class baseline (random guess of most common): {majority:.4f}")
-
-        summaries[tgt] = {"pos_trained": None, "piece_trained": None,
-                          "pos_untrained": None, "piece_untrained": None}
-
-        summaries[tgt]["pos_trained"] = run_layer_sweep(
-            X_t, y, ncls, pos_train_t, pos_test_t, args.epochs, device,
-            label=f"TRAINED — POSITION-LEVEL", target_name=tgt,
-            seeds=tuple(args.seeds),
-        )
         if not args.skip_piece_split:
-            summaries[tgt]["piece_trained"] = run_layer_sweep(
-                X_t, y, ncls, piece_train_t, piece_test_t, args.epochs, device,
-                label=f"TRAINED — PIECE-LEVEL (held-out pieces)",
-                target_name=tgt, seeds=tuple(args.seeds),
-            )
+            piece_train_t, piece_test_t, _ = piece_split(
+                pieces_t, args.probe_train_frac, seed)
+            if untrained_model is not None:
+                piece_train_u, piece_test_u, _ = piece_split(
+                    pieces_u, args.probe_train_frac, seed)
+
+        # Encode chord targets using the pre-computed deterministic vocab
+        y_chord_t_int = np.array(
+            [chord_to_idx.get(c, 0) for c in y_chord_t], dtype=np.int64)
         if untrained_model is not None:
-            y_u = {"mode": y_mode_u, "chord": y_chord_u_int, "beat": y_beat_u}[tgt]
-            summaries[tgt]["pos_untrained"] = run_layer_sweep(
-                X_u, y_u, ncls, pos_train_u, pos_test_u, args.epochs, device,
-                label=f"UNTRAINED — POSITION-LEVEL (random-init control)",
-                target_name=tgt, seeds=tuple(args.seeds),
+            y_chord_u_int = np.array(
+                [chord_to_idx.get(c, 0) for c in y_chord_u], dtype=np.int64)
+
+        target_specs_t = {
+            "mode":  (y_mode_t,    2),
+            "chord": (y_chord_t_int, n_chord_classes),
+            "beat":  (y_beat_t,    5),
+        }
+        if untrained_model is not None:
+            target_specs_u = {
+                "mode":  (y_mode_u,    2),
+                "chord": (y_chord_u_int, n_chord_classes),
+                "beat":  (y_beat_u,    5),
+            }
+
+        for tgt in args.targets:
+            y_t, ncls = target_specs_t[tgt]
+            if seed == args.seeds[0]:
+                cnts = Counter(y_t.tolist())
+                majorities[tgt] = max(cnts.values()) / len(y_t)
+                print(f"\n[{tgt}] majority-class baseline: {majorities[tgt]:.4f}")
+
+            rows = run_layer_sweep(
+                X_t, y_t, ncls, pos_train_t, pos_test_t, args.epochs, device,
+                label=f"TRAINED — POSITION-LEVEL (seed {seed})", target_name=tgt,
+                seeds=(seed,),
             )
+            for L, lin_stats, mlp_stats in rows:
+                all_results[tgt]["pos_trained"][L].append(
+                    (lin_stats["accuracy_mean"], mlp_stats["accuracy_mean"]))
+
             if not args.skip_piece_split:
-                summaries[tgt]["piece_untrained"] = run_layer_sweep(
-                    X_u, y_u, ncls, piece_train_u, piece_test_u, args.epochs, device,
-                    label=f"UNTRAINED — PIECE-LEVEL", target_name=tgt,
-                    seeds=tuple(args.seeds),
+                rows = run_layer_sweep(
+                    X_t, y_t, ncls, piece_train_t, piece_test_t, args.epochs, device,
+                    label=f"TRAINED — PIECE-LEVEL (seed {seed})", target_name=tgt,
+                    seeds=(seed,),
                 )
+                for L, lin_stats, mlp_stats in rows:
+                    all_results[tgt]["piece_trained"][L].append(
+                        (lin_stats["accuracy_mean"], mlp_stats["accuracy_mean"]))
 
-    # ── headline ──
-    print(f"\n{'═'*78}\nHEADLINE (n_seeds={len(args.seeds)}, "
-          f"report_mode={args.report_mode})\n{'═'*78}")
+            if untrained_model is not None:
+                y_u, _ = target_specs_u[tgt]
+                rows = run_layer_sweep(
+                    X_u, y_u, ncls, pos_train_u, pos_test_u, args.epochs, device,
+                    label=f"UNTRAINED — POSITION-LEVEL (seed {seed})", target_name=tgt,
+                    seeds=(seed,),
+                )
+                for L, lin_stats, mlp_stats in rows:
+                    all_results[tgt]["pos_untrained"][L].append(
+                        (lin_stats["accuracy_mean"], mlp_stats["accuracy_mean"]))
 
-    def best_by_mean(rows, probe_ix):
-        if not rows: return None
-        return max(rows, key=lambda r: r[probe_ix]["accuracy_mean"])
+                if not args.skip_piece_split:
+                    rows = run_layer_sweep(
+                        X_u, y_u, ncls, piece_train_u, piece_test_u, args.epochs, device,
+                        label=f"UNTRAINED — PIECE-LEVEL (seed {seed})", target_name=tgt,
+                        seeds=(seed,),
+                    )
+                    for L, lin_stats, mlp_stats in rows:
+                        all_results[tgt]["piece_untrained"][L].append(
+                            (lin_stats["accuracy_mean"], mlp_stats["accuracy_mean"]))
 
-    def best_by_max(rows, probe_ix):
-        if not rows: return None
-        return max(rows, key=lambda r: r[probe_ix]["accuracy_max"])
+    # ─────────────────────────────────────────────────────────────────────────
+    # Aggregate across seeds
+    # ─────────────────────────────────────────────────────────────────────────
+    n_s = len(args.seeds)
 
-    def mean_across_layers(rows, probe_ix):
-        if not rows: return None
-        all_accs = [a for r in rows for a in r[probe_ix]["accuracies"]]
-        return {"mean": float(np.mean(all_accs)),
-                "std":  float(np.std(all_accs)),
-                "n":    len(all_accs)}
+    def aggregate(layer_dict, label):
+        if not layer_dict: return None
+        print(f"\n{'-'*78}\n{label}  (mean ± std over {n_s} seed(s))\n{'-'*78}")
+        print(f"  {'Layer':<8}{'LinAcc (mean±std)':>22}{'MLPAcc (mean±std)':>22}")
+        rows = []
+        for L in sorted(layer_dict.keys()):
+            arr = np.array(layer_dict[L])
+            lin_m = float(arr[:, 0].mean()); lin_s = float(arr[:, 0].std(ddof=1)) if n_s > 1 else 0.0
+            mlp_m = float(arr[:, 1].mean()); mlp_s = float(arr[:, 1].std(ddof=1)) if n_s > 1 else 0.0
+            lab = "embed" if L == 0 else f"L{L}"
+            print(f"  {lab:<8}{lin_m:>10.4f}±{lin_s:.4f}    {mlp_m:>10.4f}±{mlp_s:.4f}")
+            rows.append((L, lin_m, lin_s, mlp_m, mlp_s))
+        return rows
 
-    def show(rows, probe_ix, label):
-        if not rows:
-            print(f"  {label:<28}    —"); return
-        if args.report_mode in ("mean", "both"):
-            cross = mean_across_layers(rows, probe_ix)
-            print(f"  {label:<28}  mean-across-layers&seeds: "
-                  f"{cross['mean']:.4f} ± {cross['std']:.4f}  (n={cross['n']})")
-        if args.report_mode in ("max", "both"):
-            b = best_by_max(rows, probe_ix)
-            L, _, _ = b
-            res = b[probe_ix]
-            layer = "embed" if L == 0 else f"L{L}"
-            print(f"  {label:<28}  max-layer&seed:           "
-                  f"{res['accuracy_max']:.4f}  (at {layer})")
-        if args.report_mode == "both":
-            # show the inflation: max - mean
-            b = best_by_max(rows, probe_ix)
-            cross = mean_across_layers(rows, probe_ix)
-            inflation = b[probe_ix]["accuracy_max"] - cross["mean"]
-            print(f"  {label:<28}  inflation (max − mean):   {inflation:+.4f}")
+    print(f"\n{'═'*78}\nAGGREGATE TABLES (mean ± std over {n_s} seed(s))\n{'═'*78}")
+    aggregated = {t: {} for t in args.targets}
+    for tgt in args.targets:
+        print(f"\n[{tgt}]  majority baseline = {majorities.get(tgt, float('nan')):.4f}")
+        aggregated[tgt]["pos_trained"]    = aggregate(all_results[tgt]["pos_trained"],    f"TRAINED — POSITION-LEVEL [{tgt}]")
+        aggregated[tgt]["piece_trained"]  = aggregate(all_results[tgt]["piece_trained"],  f"TRAINED — PIECE-LEVEL [{tgt}]")
+        aggregated[tgt]["pos_untrained"]  = aggregate(all_results[tgt]["pos_untrained"],  f"UNTRAINED — POSITION-LEVEL [{tgt}]")
+        aggregated[tgt]["piece_untrained"] = aggregate(all_results[tgt]["piece_untrained"], f"UNTRAINED — PIECE-LEVEL [{tgt}]")
+
+    print(f"\n{'═'*78}\nHEADLINE — best layer by mean over {n_s} seed(s)\n{'═'*78}")
+    def show_best(rows, ix_m, ix_s, lab):
+        if not rows: print(f"  {lab:<32}    —"); return
+        b = max(rows, key=lambda r: r[ix_m])
+        L, m, s = b[0], b[ix_m], b[ix_s]
+        layer = "embed" if L == 0 else f"L{L}"
+        print(f"  {lab:<32}  {layer:>5}   acc={m:.4f}±{s:.4f}")
 
     for tgt in args.targets:
         print(f"\n  [{tgt}]")
-        s = summaries[tgt]
         print("    POSITION-LEVEL:")
-        show(s["pos_trained"], 1, "trained  linear")
-        show(s["pos_trained"], 2, "trained  MLP")
-        show(s["pos_untrained"], 1, "untrained linear")
-        show(s["pos_untrained"], 2, "untrained MLP")
-        if not args.skip_piece_split:
+        show_best(aggregated[tgt]["pos_trained"],   1, 2, "trained  linear")
+        show_best(aggregated[tgt]["pos_trained"],   3, 4, "trained  MLP")
+        show_best(aggregated[tgt]["pos_untrained"], 1, 2, "untrained linear")
+        show_best(aggregated[tgt]["pos_untrained"], 3, 4, "untrained MLP")
+        if aggregated[tgt]["piece_trained"]:
             print("    PIECE-LEVEL (held-out pieces):")
-            show(s["piece_trained"], 1, "trained  linear")
-            show(s["piece_trained"], 2, "trained  MLP")
-            show(s["piece_untrained"], 1, "untrained linear")
-            show(s["piece_untrained"], 2, "untrained MLP")
-
-    print(f"\n{'─'*78}\nINTERPRETATION GUIDE\n{'─'*78}")
-    print("  Beat probe (load-bearing Othello-positive prediction):")
-    print("    real model:        high accuracy on PIECE-LEVEL split")
-    print("    within-shuffled:   should COLLAPSE on PIECE-LEVEL split")
-    print("    global-shuffled:   should COLLAPSE to chance (~0.25)")
-    print("")
-    print("  Mode / chord probes (cities-analogue prediction):")
-    print("    real model:        high acc on PIECE-LEVEL")
-    print("    within-shuffled:   should STAY HIGH (set-membership leak)")
-    print("    global-shuffled:   should collapse")
-    print("")
-    print("  Honest reporting note:")
-    print("    Use the 'mean-across-layers&seeds' number as the headline.")
-    print("    'max-layer&seed' is shown for comparison — its inflation over")
-    print("    the mean reveals how much best-of-n selection contaminates")
-    print("    single-seed results. Treat large inflation (>5 pts) as a red")
-    print("    flag for the reliability of a max-based finding.")
+            show_best(aggregated[tgt]["piece_trained"],   1, 2, "trained  linear")
+            show_best(aggregated[tgt]["piece_trained"],   3, 4, "trained  MLP")
+            show_best(aggregated[tgt]["piece_untrained"], 1, 2, "untrained linear")
+            show_best(aggregated[tgt]["piece_untrained"], 3, 4, "untrained MLP")
 
 
 if __name__ == "__main__":

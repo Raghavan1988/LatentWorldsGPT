@@ -38,6 +38,7 @@ import csv
 import pickle
 import sys
 import time
+from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -273,16 +274,16 @@ def main():
     p.add_argument("--skip_untrained", action="store_true")
     args = p.parse_args()
 
-    torch.manual_seed(args.seeds[0]); np.random.seed(args.seeds[0])
     device = ("cuda" if torch.cuda.is_available()
               else "mps" if torch.backends.mps.is_available() else "cpu")
     print(f"device: {device}")
+    print(f"running {len(args.seeds)} seed(s): {args.seeds}")
 
     data_dir = Path(args.data_dir)
     ckpt = torch.load(args.ckpt, map_location=device, weights_only=False)
     config = GPTConfig(**ckpt["config"])
-    trained = GPT(config).to(device); trained.eval()
-    untrained = None if args.skip_untrained else GPT(config).to(device).eval()
+    trained = GPT(config).to(device); trained.load_state_dict(ckpt["model_state"])
+    trained.eval()
     print(f"  iter={ckpt.get('iter','?')}  "
           f"val_ppl={ckpt.get('val_perplexity',float('nan')):.4f}  "
           f"vocab_size={config.vocab_size}")
@@ -297,80 +298,106 @@ def main():
         for s in ("val", "gen")
     }
 
-    def build(model, lab):
-        print(f"\nBuilding probe dataset for {lab} model ...")
-        t0 = time.time()
-        X, y = build_probe_dataset(
-            model, streams, targets, config.block_size,
-            args.n_positions, device, rng_seed=args.seeds[0],
+    # all_results[condition][L] = list of (lin_mean, mlp_mean) per-cell-means, one tuple per seed
+    all_results = {"trained": defaultdict(list), "untrained": defaultdict(list)}
+
+    for seed in args.seeds:
+        print(f"\n{'#'*78}\n# SEED {seed}\n{'#'*78}")
+        torch.manual_seed(seed); np.random.seed(seed)
+
+        untrained = None if args.skip_untrained else GPT(config).to(device).eval()
+
+        def build(model, lab):
+            print(f"\nBuilding probe dataset for {lab} (seed={seed}) ...")
+            t0 = time.time()
+            X, y = build_probe_dataset(
+                model, streams, targets, config.block_size,
+                args.n_positions, device, rng_seed=seed,
+            )
+            print(f"  collected {len(y):,} positions × 64 cells "
+                  f"across {len(X)} layers ({time.time()-t0:.1f}s)")
+            return X, y
+
+        X_t, y_t = build(trained, "TRAINED")
+        if untrained is not None:
+            X_u, y_u = build(untrained, "UNTRAINED")
+
+        tr_ix, te_ix = position_split(len(y_t), args.probe_train_frac, seed)
+        if untrained is not None:
+            tr_u, te_u = position_split(len(y_u), args.probe_train_frac, seed)
+
+        if seed == args.seeds[0]:
+            cnt = np.bincount(y_t[te_ix, 0], minlength=3)
+            print(f"\n  cell-0 test class distribution: empty={cnt[0]} black={cnt[1]} "
+                  f"white={cnt[2]}  (majority baseline = {cnt.max()/cnt.sum():.3f})")
+
+        trained_rows = run_cell_sweep(
+            X_t, y_t, tr_ix, te_ix, args.epochs, device,
+            f"TRAINED — board-state probe (seed {seed})",
+            seeds=(seed,),
         )
-        print(f"  collected {len(y):,} positions × 64 cells "
-              f"across {len(X)} layers ({time.time()-t0:.1f}s)")
-        return X, y
+        for L, lin_stats, mlp_stats in trained_rows:
+            all_results["trained"][L].append(
+                (lin_stats["accuracy_mean"], mlp_stats["accuracy_mean"]))
 
-    X_t, y_t = build(trained, "TRAINED")
-    if untrained is not None:
-        X_u, y_u = build(untrained, "UNTRAINED")
+        if untrained is not None:
+            untrained_rows = run_cell_sweep(
+                X_u, y_u, tr_u, te_u, args.epochs, device,
+                f"UNTRAINED — random-init control (seed {seed})",
+                seeds=(seed,),
+            )
+            for L, lin_stats, mlp_stats in untrained_rows:
+                all_results["untrained"][L].append(
+                    (lin_stats["accuracy_mean"], mlp_stats["accuracy_mean"]))
 
-    tr_ix, te_ix = position_split(len(y_t), args.probe_train_frac, args.seeds[0])
-    print(f"\nPOSITION-LEVEL split: train={len(tr_ix):,}  test={len(te_ix):,}")
-    if untrained is not None:
-        tr_u, te_u = position_split(len(y_u), args.probe_train_frac, args.seeds[0])
+    # ─────────────────────────────────────────────────────────────────────────
+    # Aggregate across seeds
+    # ─────────────────────────────────────────────────────────────────────────
+    n_s = len(args.seeds)
 
-    cnt = np.bincount(y_t[te_ix, 0], minlength=3)
-    print(f"  cell-0 test class distribution: empty={cnt[0]} black={cnt[1]} "
-          f"white={cnt[2]}  (majority baseline = {cnt.max()/cnt.sum():.3f})")
+    def aggregate(layer_dict, label):
+        if not layer_dict: return None
+        print(f"\n{'='*78}\n{label}  (mean ± std over {n_s} seed(s))\n{'='*78}")
+        print(f"  {'Layer':<8}{'Lin per-cell μ±σ':>26}{'MLP per-cell μ±σ':>26}")
+        rows = []
+        for L in sorted(layer_dict.keys()):
+            arr = np.array(layer_dict[L])  # (n_seeds, 2): col 0 = lin, col 1 = mlp
+            lin_m = float(arr[:, 0].mean()); lin_s = float(arr[:, 0].std(ddof=1)) if n_s > 1 else 0.0
+            mlp_m = float(arr[:, 1].mean()); mlp_s = float(arr[:, 1].std(ddof=1)) if n_s > 1 else 0.0
+            lab = "embed" if L == 0 else f"L{L}"
+            print(f"  {lab:<8}{lin_m:>14.4f}±{lin_s:.4f}    {mlp_m:>12.4f}±{mlp_s:.4f}")
+            rows.append((L, lin_m, lin_s, mlp_m, mlp_s))
+        return rows
 
-    trained_rows = run_cell_sweep(
-        X_t, y_t, tr_ix, te_ix, args.epochs, device,
-        "TRAINED model — board-state probe (per-cell mean)",
-        seeds=tuple(args.seeds),
-    )
-    untrained_rows = []
-    if untrained is not None:
-        untrained_rows = run_cell_sweep(
-            X_u, y_u, tr_u, te_u, args.epochs, device,
-            "UNTRAINED model — random-init control",
-            seeds=tuple(args.seeds),
-        )
+    agg_t = aggregate(all_results["trained"], "TRAINED — board-state")
+    agg_u = aggregate(all_results["untrained"], "UNTRAINED — board-state")
 
-    print(f"\n{'═'*78}\nHEADLINE\n{'═'*78}")
-    def best_by_mean(rows, ix):
-        if not rows: return None
-        return max(rows, key=lambda r: r[ix]["accuracy_mean"])
-    def show(rows, ix, lab):
-        b = best_by_mean(rows, ix)
-        if b is None: print(f"  {lab:<32}    —"); return
-        L, _, _ = b
-        s = b[ix]
+    print(f"\n{'═'*78}\nHEADLINE — best layer by per-cell μ over {n_s} seed(s)\n{'═'*78}")
+    def show_best(rows, ix_m, ix_s, lab):
+        if not rows: print(f"  {lab:<32}    —"); return
+        b = max(rows, key=lambda r: r[ix_m])
+        L, m, s = b[0], b[ix_m], b[ix_s]
         layer = "embed" if L == 0 else f"L{L}"
-        print(f"  {lab:<32}  best layer={layer:>5}  "
-              f"per-cell mean={s['accuracy_mean']:.4f}±{s['accuracy_std']:.4f}  "
-              f"best-cell={s['accuracy_max']:.4f}")
-    print("  TRAINED:")
-    show(trained_rows, 1, "linear")
-    show(trained_rows, 2, "MLP")
-    if untrained is not None:
-        print("  UNTRAINED:")
-        show(untrained_rows, 1, "linear")
-        show(untrained_rows, 2, "MLP")
+        print(f"  {lab:<32}  {layer:>5}   per-cell={m:.4f}±{s:.4f}")
+    show_best(agg_t, 1, 2, "trained  linear")
+    show_best(agg_t, 3, 4, "trained  MLP")
+    if agg_u:
+        show_best(agg_u, 1, 2, "untrained linear")
+        show_best(agg_u, 3, 4, "untrained MLP")
 
-    print(f"\n{'─'*78}\nACCEPTANCE\n{'─'*78}")
-    if trained_rows and untrained_rows:
-        b_t = best_by_mean(trained_rows, 2)  # trained MLP
-        b_u = best_by_mean(untrained_rows, 2)
-        gap = b_t[2]["accuracy_mean"] - b_u[2]["accuracy_mean"]
-        if b_t[2]["accuracy_mean"] >= 0.85 and gap >= 0.20:
-            print(f"  ✓ TRAINED MLP per-cell mean = {b_t[2]['accuracy_mean']:.3f} "
-                  f"(target ≥ 0.85)")
-            print(f"  ✓ TRAINED − UNTRAINED gap = {gap:+.3f}  (target ≥ 0.20)")
-            print(f"    → Framework reproduces Othello-GPT. Music null is principled.")
+    print(f"\n{'─'*78}\nACCEPTANCE (best-layer trained MLP vs best-layer untrained MLP)\n{'─'*78}")
+    if agg_t and agg_u:
+        b_t = max(agg_t, key=lambda r: r[3])
+        b_u = max(agg_u, key=lambda r: r[3])
+        gap = b_t[3] - b_u[3]
+        ok = b_t[3] >= 0.85 and gap >= 0.20
+        mark = "✓" if ok else "✗"
+        print(f"  {mark} TRAINED MLP per-cell μ = {b_t[3]:.4f}±{b_t[4]:.4f}  (target ≥ 0.85)")
+        print(f"  {mark} TRAINED − UNTRAINED gap = {gap:+.4f}  (target ≥ 0.20)")
+        if ok:
+            print(f"    → Framework reproduces Othello-GPT-style positive control.")
         else:
-            print(f"  ✗ TRAINED MLP per-cell mean = {b_t[2]['accuracy_mean']:.3f} "
-                  f"(target ≥ 0.85)")
-            print(f"  ✗ TRAINED − UNTRAINED gap = {gap:+.3f}  (target ≥ 0.20)")
-            print(f"    → Investigate: model capacity, training schedule, or "
-                  f"probe code.")
+            print(f"    → Investigate: model capacity, training schedule, or probe code.")
 
 
 if __name__ == "__main__":

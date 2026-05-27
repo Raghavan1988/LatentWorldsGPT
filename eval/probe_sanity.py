@@ -147,7 +147,8 @@ def main():
     data_dir = Path(args.data_dir)
     ckpt = torch.load(args.ckpt, map_location=device, weights_only=False)
     config = GPTConfig(**ckpt["config"])
-    trained = GPT(config).to(device); trained.eval()
+    trained = GPT(config).to(device); trained.load_state_dict(ckpt["model_state"])
+    trained.eval()
     untrained = GPT(config).to(device); untrained.eval()
 
     with open(data_dir / "meta.pkl", "rb") as f:

@@ -265,7 +265,8 @@ def main():
     data_dir = Path(args.data_dir)
     ckpt = torch.load(args.ckpt, map_location=device, weights_only=False)
     config = GPTConfig(**ckpt["config"])
-    trained_model = GPT(config).to(device); trained_model.eval()
+    trained_model = GPT(config).to(device); trained_model.load_state_dict(ckpt["model_state"])
+    trained_model.eval()
     untrained_model = None if args.skip_untrained else GPT(config).to(device).eval()
     with open(data_dir / "meta.pkl", "rb") as f:
         meta = pickle.load(f)

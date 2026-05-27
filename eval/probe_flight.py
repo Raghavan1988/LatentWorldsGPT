@@ -21,7 +21,7 @@ import csv
 import pickle
 import sys
 import time
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -219,17 +219,16 @@ def main():
     p.add_argument("--skip_flight_split", action="store_true")
     args = p.parse_args()
 
-    torch.manual_seed(args.seeds[0]); np.random.seed(args.seeds[0])
     device = ("cuda" if torch.cuda.is_available()
               else "mps" if torch.backends.mps.is_available() else "cpu")
     print(f"device: {device}")
+    print(f"running {len(args.seeds)} seed(s): {args.seeds}")
 
     data_dir = Path(args.data_dir)
     ckpt = torch.load(args.ckpt, map_location=device, weights_only=False)
     config = GPTConfig(**ckpt["config"])
     trained = GPT(config).to(device); trained.load_state_dict(ckpt["model_state"])
     trained.eval()
-    untrained = None if args.skip_untrained else GPT(config).to(device).eval()
     print(f"loaded ckpt: iter={ckpt.get('iter','?')}  val_ppl={ckpt.get('val_perplexity',float('nan')):.4f}")
 
     print(f"\nLoading probe targets ...")
@@ -243,83 +242,128 @@ def main():
     streams = {s: np.asarray(np.memmap(data_dir / f"{s}.bin", dtype=dtype, mode="r"))
                for s in ("val", "gen")}
 
-    def build(model, lab):
-        print(f"\nBuilding probe dataset for {lab} ...")
-        t0 = time.time()
-        X, y, flights = build_probe_dataset(
-            model, streams, targets, flight_idx_of,
-            config.block_size, args.n_positions, device, rng_seed=args.seeds[0])
-        print(f"  collected {len(y):,} positions ({time.time() - t0:.1f}s)")
-        return X, y, flights
+    # all_results[cond][L] = list of (lin_acc, mlp_acc) per-seed
+    all_results = {
+        "trained_pos": defaultdict(list),
+        "trained_flt": defaultdict(list),
+        "untrained_pos": defaultdict(list),
+        "untrained_flt": defaultdict(list),
+    }
+    class_info_printed = False
 
-    X_t, y_t_str, flights_t = build(trained, "TRAINED")
-    if untrained is not None:
-        X_u, y_u_str, flights_u = build(untrained, "UNTRAINED")
+    for seed in args.seeds:
+        print(f"\n{'#'*78}\n# SEED {seed}\n{'#'*78}")
+        torch.manual_seed(seed); np.random.seed(seed)
 
-    # Encode phase strings to class IDs
-    all_classes = sorted({c for c in y_t_str.tolist()
-                          + (y_u_str.tolist() if untrained is not None else [])})
-    cls_to_idx = {c: i for i, c in enumerate(all_classes)}
-    y_t = np.array([cls_to_idx[c] for c in y_t_str], dtype=np.int64)
-    n_classes = len(all_classes)
-    if untrained is not None:
-        y_u = np.array([cls_to_idx[c] for c in y_u_str], dtype=np.int64)
-    print(f"\nclasses ({n_classes}): {all_classes}")
-    print(f"class distribution: {dict(Counter(y_t_str.tolist()))}")
-    majority = max(Counter(y_t_str.tolist()).values()) / len(y_t_str)
-    print(f"majority baseline: {majority:.4f}  (chance: {1/n_classes:.4f})")
+        untrained = None if args.skip_untrained else GPT(config).to(device).eval()
 
-    # Splits
-    pos_train_t, pos_test_t = position_split(len(y_t), args.probe_train_frac, args.seeds[0])
-    if untrained is not None:
-        pos_train_u, pos_test_u = position_split(len(y_u), args.probe_train_frac, args.seeds[0])
-    if not args.skip_flight_split:
-        flt_train_t, flt_test_t = flight_split(flights_t, args.probe_train_frac, args.seeds[0])
-        print(f"\nFLIGHT-LEVEL split: train={len(flt_train_t):,} test={len(flt_test_t):,}")
+        def build(model, lab):
+            print(f"\nBuilding probe dataset for {lab} (seed={seed}) ...")
+            t0 = time.time()
+            X, y, flights = build_probe_dataset(
+                model, streams, targets, flight_idx_of,
+                config.block_size, args.n_positions, device, rng_seed=seed)
+            print(f"  collected {len(y):,} positions ({time.time() - t0:.1f}s)")
+            return X, y, flights
+
+        X_t, y_t_str, flights_t = build(trained, "TRAINED")
         if untrained is not None:
-            flt_train_u, flt_test_u = flight_split(flights_u, args.probe_train_frac, args.seeds[0])
+            X_u, y_u_str, flights_u = build(untrained, "UNTRAINED")
 
-    # Per-condition sweeps
-    summary = {}
-    summary["trained_pos"] = run_layer_sweep(
-        X_t, y_t, n_classes, pos_train_t, pos_test_t, args.epochs, device,
-        "TRAINED — POSITION-LEVEL", seeds=tuple(args.seeds))
-    if not args.skip_flight_split:
-        summary["trained_flt"] = run_layer_sweep(
-            X_t, y_t, n_classes, flt_train_t, flt_test_t, args.epochs, device,
-            "TRAINED — FLIGHT-LEVEL (held-out flights)", seeds=tuple(args.seeds))
-    if untrained is not None:
-        summary["untrained_pos"] = run_layer_sweep(
-            X_u, y_u, n_classes, pos_train_u, pos_test_u, args.epochs, device,
-            "UNTRAINED — POSITION-LEVEL", seeds=tuple(args.seeds))
+        # Class encoding (stable across seeds since classes are deterministic)
+        all_classes = sorted({c for c in y_t_str.tolist()
+                              + (y_u_str.tolist() if untrained is not None else [])})
+        cls_to_idx = {c: i for i, c in enumerate(all_classes)}
+        y_t = np.array([cls_to_idx[c] for c in y_t_str], dtype=np.int64)
+        n_classes = len(all_classes)
+        if untrained is not None:
+            y_u = np.array([cls_to_idx[c] for c in y_u_str], dtype=np.int64)
+
+        if not class_info_printed:
+            print(f"\nclasses ({n_classes}): {all_classes}")
+            print(f"class distribution: {dict(Counter(y_t_str.tolist()))}")
+            majority = max(Counter(y_t_str.tolist()).values()) / len(y_t_str)
+            print(f"majority baseline: {majority:.4f}  (chance: {1/n_classes:.4f})")
+            class_info_printed = True
+
+        pos_train_t, pos_test_t = position_split(len(y_t), args.probe_train_frac, seed)
+        if untrained is not None:
+            pos_train_u, pos_test_u = position_split(len(y_u), args.probe_train_frac, seed)
         if not args.skip_flight_split:
-            summary["untrained_flt"] = run_layer_sweep(
-                X_u, y_u, n_classes, flt_train_u, flt_test_u, args.epochs, device,
-                "UNTRAINED — FLIGHT-LEVEL", seeds=tuple(args.seeds))
+            flt_train_t, flt_test_t = flight_split(flights_t, args.probe_train_frac, seed)
+            if untrained is not None:
+                flt_train_u, flt_test_u = flight_split(flights_u, args.probe_train_frac, seed)
 
-    print(f"\n{'═'*78}\nHEADLINE\n{'═'*78}")
-    def best_mean(rows, ix_mean):
-        if not rows: return None
-        return max(rows, key=lambda r: r[ix_mean])
-    def show(rows, key, lab):
-        b = best_mean(rows, 1 if key == "lin" else 4)
-        if b is None: print(f"  {lab:<28}    —"); return
-        L = b[0]
-        if key == "lin":
-            mean, std, mx = b[1], b[2], b[3]
-        else:
-            mean, std, mx = b[4], b[5], b[6]
+        trained_pos = run_layer_sweep(
+            X_t, y_t, n_classes, pos_train_t, pos_test_t, args.epochs, device,
+            f"TRAINED — POSITION-LEVEL (seed {seed})", seeds=(seed,))
+        for L, lin_mean, _, _, mlp_mean, _, _ in trained_pos:
+            all_results["trained_pos"][L].append((lin_mean, mlp_mean))
+
+        if not args.skip_flight_split:
+            trained_flt = run_layer_sweep(
+                X_t, y_t, n_classes, flt_train_t, flt_test_t, args.epochs, device,
+                f"TRAINED — FLIGHT-LEVEL (seed {seed})", seeds=(seed,))
+            for L, lin_mean, _, _, mlp_mean, _, _ in trained_flt:
+                all_results["trained_flt"][L].append((lin_mean, mlp_mean))
+
+        if untrained is not None:
+            untrained_pos = run_layer_sweep(
+                X_u, y_u, n_classes, pos_train_u, pos_test_u, args.epochs, device,
+                f"UNTRAINED — POSITION-LEVEL (seed {seed})", seeds=(seed,))
+            for L, lin_mean, _, _, mlp_mean, _, _ in untrained_pos:
+                all_results["untrained_pos"][L].append((lin_mean, mlp_mean))
+
+            if not args.skip_flight_split:
+                untrained_flt = run_layer_sweep(
+                    X_u, y_u, n_classes, flt_train_u, flt_test_u, args.epochs, device,
+                    f"UNTRAINED — FLIGHT-LEVEL (seed {seed})", seeds=(seed,))
+                for L, lin_mean, _, _, mlp_mean, _, _ in untrained_flt:
+                    all_results["untrained_flt"][L].append((lin_mean, mlp_mean))
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Aggregate
+    # ─────────────────────────────────────────────────────────────────────────
+    n_s = len(args.seeds)
+
+    def aggregate(layer_dict, label):
+        if not layer_dict: return None
+        print(f"\n{'='*78}\n{label}  (mean ± std over {n_s} seed(s))\n{'='*78}")
+        print(f"  {'Layer':<8}{'LinAcc (mean±std)':>22}{'MLPAcc (mean±std)':>22}")
+        rows = []
+        for L in sorted(layer_dict.keys()):
+            arr = np.array(layer_dict[L])
+            lin_m = float(arr[:, 0].mean()); lin_s = float(arr[:, 0].std(ddof=1)) if n_s > 1 else 0.0
+            mlp_m = float(arr[:, 1].mean()); mlp_s = float(arr[:, 1].std(ddof=1)) if n_s > 1 else 0.0
+            lab = "embed" if L == 0 else f"L{L}"
+            print(f"  {lab:<8}{lin_m:>10.4f}±{lin_s:.4f}    {mlp_m:>10.4f}±{mlp_s:.4f}")
+            rows.append((L, lin_m, lin_s, mlp_m, mlp_s))
+        return rows
+
+    agg_tpos  = aggregate(all_results["trained_pos"],   "TRAINED — POSITION-LEVEL")
+    agg_tflt  = aggregate(all_results["trained_flt"],   "TRAINED — FLIGHT-LEVEL")
+    agg_upos  = aggregate(all_results["untrained_pos"], "UNTRAINED — POSITION-LEVEL")
+    agg_uflt  = aggregate(all_results["untrained_flt"], "UNTRAINED — FLIGHT-LEVEL")
+
+    print(f"\n{'═'*78}\nHEADLINE — best layer by mean over {n_s} seed(s)\n{'═'*78}")
+    def show_best(rows, ix_m, ix_s, lab):
+        if not rows: print(f"  {lab:<32}    —"); return
+        b = max(rows, key=lambda r: r[ix_m])
+        L, m, s = b[0], b[ix_m], b[ix_s]
         layer = "embed" if L == 0 else f"L{L}"
-        print(f"  {lab:<28}  {layer:>5}  mean={mean:.4f}±{std:.4f}  max={mx:.4f}")
+        print(f"  {lab:<32}  {layer:>5}   acc={m:.4f}±{s:.4f}")
 
-    for split_label, suffix in (("POSITION-LEVEL", "pos"), ("FLIGHT-LEVEL", "flt")):
-        if args.skip_flight_split and suffix == "flt":
-            continue
-        print(f"\n  {split_label}:")
-        show(summary.get(f"trained_{suffix}"), "lin", "trained  linear")
-        show(summary.get(f"trained_{suffix}"), "mlp", "trained  MLP")
-        show(summary.get(f"untrained_{suffix}"), "lin", "untrained linear")
-        show(summary.get(f"untrained_{suffix}"), "mlp", "untrained MLP")
+    print("\n  POSITION-LEVEL:")
+    show_best(agg_tpos, 1, 2, "trained  linear")
+    show_best(agg_tpos, 3, 4, "trained  MLP")
+    show_best(agg_upos, 1, 2, "untrained linear")
+    show_best(agg_upos, 3, 4, "untrained MLP")
+    if agg_tflt:
+        print("\n  FLIGHT-LEVEL (held-out flights):")
+        show_best(agg_tflt, 1, 2, "trained  linear")
+        show_best(agg_tflt, 3, 4, "trained  MLP")
+        show_best(agg_uflt, 1, 2, "untrained linear")
+        show_best(agg_uflt, 3, 4, "untrained MLP")
 
 
 if __name__ == "__main__":

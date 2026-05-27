@@ -36,6 +36,7 @@ import math
 import pickle
 import sys
 import time
+from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -230,12 +231,20 @@ def main():
     p.add_argument("--n_positions", type=int, default=20_000)
     p.add_argument("--probe_train_frac", type=float, default=0.8)
     p.add_argument("--epochs", type=int, default=50)
-    p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--seeds", type=int, default=1,
+                   help="number of seeds to run; uses seeds 0..N-1")
+    p.add_argument("--seed", type=int, default=None,
+                   help="single seed shorthand; if set, overrides --seeds")
     p.add_argument("--skip_untrained", action="store_true")
     p.add_argument("--skip_node_split", action="store_true")
     args = p.parse_args()
 
-    torch.manual_seed(args.seed); np.random.seed(args.seed)
+    if args.seed is not None:
+        seeds = [args.seed]
+    else:
+        seeds = list(range(args.seeds))
+    print(f"running {len(seeds)} seed(s): {seeds}")
+
     device = ("cuda" if torch.cuda.is_available()
               else "mps" if torch.backends.mps.is_available() else "cpu")
     print(f"device: {device}")
@@ -245,14 +254,12 @@ def main():
     config = GPTConfig(**ckpt["config"])
     trained = GPT(config).to(device); trained.load_state_dict(ckpt["model_state"])
     trained.eval()
-    untrained = None if args.skip_untrained else GPT(config).to(device).eval()
     print(f"loaded ckpt: iter={ckpt.get('iter','?')}  val_ppl={ckpt.get('val_perplexity',float('nan')):.4f}")
 
     coords_xy, center_lat, center_lon = load_coords_planar(data_dir)
     n_nodes = (~torch.isnan(coords_xy[:, 0])).sum().item()
     grid_labels, _ = build_grid_labels(coords_xy, args.grid_size)
     n_classes = args.grid_size ** 2
-    # Per-cell node-count statistics
     nonempty_labels = grid_labels[grid_labels >= 0]
     cell_counts = np.bincount(nonempty_labels.numpy(), minlength=n_classes)
     print(f"  {n_nodes} nodes binned into {args.grid_size}x{args.grid_size}={n_classes} cells")
@@ -268,76 +275,142 @@ def main():
     combined = np.concatenate([val_stream, gen_stream])
     print(f"  val+gen stream: {len(combined):,} tokens")
 
-    def build(model, lab):
-        print(f"\nBuilding probe dataset for {lab} ...")
-        t0 = time.time()
-        X, y, tokens = build_probe_dataset(
-            model, combined, grid_labels, config.block_size,
-            args.n_positions, device, rng_seed=args.seed,
-        )
-        print(f"  collected {len(y):,} positions ({time.time()-t0:.1f}s)")
-        return X, y, tokens
+    # all_results[condition][L] = list of (lin_acc, mlp_acc) tuples, one per seed
+    all_results = {
+        "trained_pos": defaultdict(list),
+        "trained_node": defaultdict(list),
+        "untrained_pos": defaultdict(list),
+        "untrained_node": defaultdict(list),
+    }
+    majority = None
 
-    X_t, y_t, tokens_t = build(trained, "TRAINED")
-    if untrained is not None:
-        X_u, y_u, tokens_u = build(untrained, "UNTRAINED")
+    for seed in seeds:
+        print(f"\n{'#'*78}\n# SEED {seed}\n{'#'*78}")
+        torch.manual_seed(seed); np.random.seed(seed)
 
-    # Position-level split
-    pos_train_t, pos_test_t = position_split(len(y_t), args.probe_train_frac, args.seed)
-    if untrained is not None:
-        pos_train_u, pos_test_u = position_split(len(y_u), args.probe_train_frac, args.seed)
+        untrained = None if args.skip_untrained else GPT(config).to(device).eval()
 
-    # Node-level split (the honest test)
-    if not args.skip_node_split:
-        node_train_t, node_test_t = node_level_split(tokens_t, args.probe_train_frac, args.seed)
+        def build(model, lab):
+            print(f"\nBuilding probe dataset for {lab} (seed={seed}) ...")
+            t0 = time.time()
+            X, y, tokens = build_probe_dataset(
+                model, combined, grid_labels, config.block_size,
+                args.n_positions, device, rng_seed=seed,
+            )
+            print(f"  collected {len(y):,} positions ({time.time()-t0:.1f}s)")
+            return X, y, tokens
+
+        X_t, y_t, tokens_t = build(trained, "TRAINED")
         if untrained is not None:
-            node_train_u, node_test_u = node_level_split(tokens_u, args.probe_train_frac, args.seed)
+            X_u, y_u, tokens_u = build(untrained, "UNTRAINED")
 
-    # Majority-class baseline
-    cnt = np.bincount(y_t, minlength=n_classes)
-    majority = cnt.max() / len(y_t)
-    print(f"\nMajority-class baseline: {majority:.4f}  (chance = 1/{n_classes} = {1/n_classes:.4f})")
+        pos_train_t, pos_test_t = position_split(len(y_t), args.probe_train_frac, seed)
+        if untrained is not None:
+            pos_train_u, pos_test_u = position_split(len(y_u), args.probe_train_frac, seed)
 
-    trained_pos = run_layer_sweep(X_t, y_t, n_classes, pos_train_t, pos_test_t,
-                                   args.epochs, device,
-                                   "TRAINED — POSITION-LEVEL")
-    if not args.skip_node_split:
-        trained_node = run_layer_sweep(X_t, y_t, n_classes, node_train_t, node_test_t,
-                                        args.epochs, device,
-                                        "TRAINED — NODE-LEVEL (held-out tokens)")
-    if untrained is not None:
-        untrained_pos = run_layer_sweep(X_u, y_u, n_classes, pos_train_u, pos_test_u,
-                                         args.epochs, device,
-                                         "UNTRAINED — POSITION-LEVEL")
         if not args.skip_node_split:
-            untrained_node = run_layer_sweep(X_u, y_u, n_classes, node_train_u, node_test_u,
-                                              args.epochs, device,
-                                              "UNTRAINED — NODE-LEVEL")
+            node_train_t, node_test_t = node_level_split(tokens_t, args.probe_train_frac, seed)
+            if untrained is not None:
+                node_train_u, node_test_u = node_level_split(tokens_u, args.probe_train_frac, seed)
 
-    print(f"\n{'═'*78}\nHEADLINE\n{'═'*78}")
-    def best_layer(rows, probe_ix):
-        if not rows: return None
-        return max(rows, key=lambda r: r[probe_ix])
-    def show(rows, probe_ix, lab):
-        b = best_layer(rows, probe_ix)
-        if b is None: print(f"  {lab:<32}    —"); return
-        L = b[0]; acc = b[probe_ix]
-        layer = "embed" if L == 0 else f"L{L}"
-        print(f"  {lab:<32}  {layer:>5}   acc={acc:.4f}")
+        if majority is None:
+            cnt = np.bincount(y_t, minlength=n_classes)
+            majority = cnt.max() / len(y_t)
+            print(f"\nMajority-class baseline: {majority:.4f}  (chance = 1/{n_classes} = {1/n_classes:.4f})")
+
+        trained_pos = run_layer_sweep(X_t, y_t, n_classes, pos_train_t, pos_test_t,
+                                       args.epochs, device,
+                                       f"TRAINED — POSITION-LEVEL (seed {seed})")
+        for L, lin, mlp in trained_pos:
+            all_results["trained_pos"][L].append((lin, mlp))
+
+        if not args.skip_node_split:
+            trained_node = run_layer_sweep(X_t, y_t, n_classes, node_train_t, node_test_t,
+                                            args.epochs, device,
+                                            f"TRAINED — NODE-LEVEL (held-out tokens, seed {seed})")
+            for L, lin, mlp in trained_node:
+                all_results["trained_node"][L].append((lin, mlp))
+
+        if untrained is not None:
+            untrained_pos = run_layer_sweep(X_u, y_u, n_classes, pos_train_u, pos_test_u,
+                                             args.epochs, device,
+                                             f"UNTRAINED — POSITION-LEVEL (seed {seed})")
+            for L, lin, mlp in untrained_pos:
+                all_results["untrained_pos"][L].append((lin, mlp))
+
+            if not args.skip_node_split:
+                untrained_node = run_layer_sweep(X_u, y_u, n_classes, node_train_u, node_test_u,
+                                                  args.epochs, device,
+                                                  f"UNTRAINED — NODE-LEVEL (seed {seed})")
+                for L, lin, mlp in untrained_node:
+                    all_results["untrained_node"][L].append((lin, mlp))
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Aggregate across seeds
+    # ─────────────────────────────────────────────────────────────────────────
+    n_s = len(seeds)
+
+    def aggregate(layer_dict, label):
+        if not layer_dict: return None
+        print(f"\n{'='*78}\n{label}  (mean ± std over {n_s} seed(s))\n{'='*78}")
+        print(f"  {'Layer':<8}{'LinAcc (mean±std)':>22}{'MLPAcc (mean±std)':>22}")
+        rows = []
+        for L in sorted(layer_dict.keys()):
+            lins = np.array([v[0] for v in layer_dict[L]])
+            mlps = np.array([v[1] for v in layer_dict[L]])
+            lin_m = lins.mean(); lin_s = lins.std(ddof=1) if len(lins) > 1 else 0.0
+            mlp_m = mlps.mean(); mlp_s = mlps.std(ddof=1) if len(mlps) > 1 else 0.0
+            lab = "embed" if L == 0 else f"L{L}"
+            print(f"  {lab:<8}{lin_m:>10.4f}±{lin_s:.4f}    {mlp_m:>10.4f}±{mlp_s:.4f}")
+            rows.append((L, lin_m, lin_s, mlp_m, mlp_s))
+        return rows
+
+    agg_tpos  = aggregate(all_results["trained_pos"],   "TRAINED — POSITION-LEVEL")
+    agg_tnode = aggregate(all_results["trained_node"],  "TRAINED — NODE-LEVEL (held-out tokens)")
+    agg_upos  = aggregate(all_results["untrained_pos"], "UNTRAINED — POSITION-LEVEL")
+    agg_unode = aggregate(all_results["untrained_node"], "UNTRAINED — NODE-LEVEL")
+
+    print(f"\n{'═'*78}\nHEADLINE — best layer by MEAN over {n_s} seed(s)\n{'═'*78}")
+    def show_best(rows, mean_ix, std_ix, lab):
+        if not rows: print(f"  {lab:<32}    —"); return
+        b = max(rows, key=lambda r: r[mean_ix])
+        L = b[0]; layer = "embed" if L == 0 else f"L{L}"
+        m = b[mean_ix]; s = b[std_ix]
+        print(f"  {lab:<32}  {layer:>5}   acc={m:.4f}±{s:.4f}")
 
     print("\n  POSITION-LEVEL:")
-    show(trained_pos, 1, "trained  linear")
-    show(trained_pos, 2, "trained  MLP")
-    if untrained is not None:
-        show(untrained_pos, 1, "untrained linear")
-        show(untrained_pos, 2, "untrained MLP")
-    if not args.skip_node_split:
+    show_best(agg_tpos, 1, 2, "trained  linear")
+    show_best(agg_tpos, 3, 4, "trained  MLP")
+    if agg_upos:
+        show_best(agg_upos, 1, 2, "untrained linear")
+        show_best(agg_upos, 3, 4, "untrained MLP")
+    if agg_tnode:
         print("\n  NODE-LEVEL (held-out tokens):")
-        show(trained_node, 1, "trained  linear")
-        show(trained_node, 2, "trained  MLP")
-        if untrained is not None:
-            show(untrained_node, 1, "untrained linear")
-            show(untrained_node, 2, "untrained MLP")
+        show_best(agg_tnode, 1, 2, "trained  linear")
+        show_best(agg_tnode, 3, 4, "trained  MLP")
+        if agg_unode:
+            show_best(agg_unode, 1, 2, "untrained linear")
+            show_best(agg_unode, 3, 4, "untrained MLP")
+
+    if n_s > 1:
+        print(f"\n{'═'*78}\nPER-SEED MAX-LAYER INFLATION CHECK\n{'═'*78}")
+        print("(Single-seed reporting maximizes across layers; this shows what that gives.)")
+        def per_seed_max(layer_dict, lab):
+            if not layer_dict: return
+            layers = sorted(layer_dict.keys())
+            seed_lin_maxes, seed_mlp_maxes = [], []
+            for s_i in range(n_s):
+                lins = [layer_dict[L][s_i][0] for L in layers]
+                mlps = [layer_dict[L][s_i][1] for L in layers]
+                seed_lin_maxes.append(max(lins))
+                seed_mlp_maxes.append(max(mlps))
+            lin_m = np.mean(seed_lin_maxes); lin_s = np.std(seed_lin_maxes, ddof=1) if n_s > 1 else 0.0
+            mlp_m = np.mean(seed_mlp_maxes); mlp_s = np.std(seed_mlp_maxes, ddof=1) if n_s > 1 else 0.0
+            print(f"  {lab:<36}  lin: {lin_m:.4f}±{lin_s:.4f}    mlp: {mlp_m:.4f}±{mlp_s:.4f}")
+        per_seed_max(all_results["trained_pos"],    "trained POS   (max-layer per seed)")
+        per_seed_max(all_results["trained_node"],   "trained NODE  (max-layer per seed)")
+        per_seed_max(all_results["untrained_pos"],  "untrained POS  (max-layer per seed)")
+        per_seed_max(all_results["untrained_node"], "untrained NODE (max-layer per seed)")
 
 
 if __name__ == "__main__":
