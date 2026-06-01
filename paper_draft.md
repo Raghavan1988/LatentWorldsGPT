@@ -119,6 +119,30 @@ We study whether, when, and where small transformers represent
 task-relevant structure in their residual streams, with care taken about
 what counts as evidence.
 
+### 1.5 Visual companions
+
+Four figures support this paper and are available in the
+[`figures/`](figures/) directory of the project repository. Readers
+who prefer a visual summary before the prose may find them useful.
+
+- **Figure 1**: [`figures/01_experimental_arc.md`](figures/01_experimental_arc.md).
+  Mermaid flowchart of the pre-register, falsify, revise, re-test arc,
+  with commit hashes and gap numbers inline. Renders directly on
+  GitHub. The single best entry point for readers who want to see the
+  scientific timeline at a glance before reading the experimental
+  sections.
+- **Figure 2**: [`figures/02_results_matrix.md`](figures/02_results_matrix.md).
+  Color-coded outcome matrix across every (domain, feature, condition)
+  cell tested in the paper. Includes a summary scorecard.
+- **Figure 3**: [`figures/03_per_layer_ablation.png`](figures/03_per_layer_ablation.png).
+  Per-layer encoding strength across domains. Embedded in §5.
+- **Figure 4**: [`figures/04_cross_condition_gradient.png`](figures/04_cross_condition_gradient.png).
+  Cross-condition gradient comparison across domains. Embedded in §5.
+
+Figure 1 is the recommended starting point. It is referenced again from
+§5 (alongside the embedded Figures 3 and 4) and from §7.1, where the
+prose narrative of the same arc lives.
+
 ---
 
 ## 2 Framing: The N-Criterion
