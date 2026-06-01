@@ -1,4 +1,4 @@
-# Predictive Interpretability: A Pre-Registered Protocol for Emergent Representations in Small Next-Token Transformers
+# Pre-Registered Analysis of Emergent Representations in Small Next-Token Transformers: Architectural Carry-Through and a Position-Correlation Probe Confound
 
 ## Abstract
 
