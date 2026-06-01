@@ -1,153 +1,193 @@
 # LatentWorldsGPT
 
-*Formerly LatentCityGPT — see "The pivot" below.*
+Pre-registered protocol for emergent representations in small next-token
+transformers. Seven domains. One ex-ante-validated mechanism (architectural
+carry-through). One identified probe confound (position-correlation) with
+two controllable diagnostics.
 
-A comparative study of **when** Othello-GPT-style emergent world representations
-appear in next-token transformers, and **what's actually going on** when a probe
-finds one.
+The paper is at [`paper_draft.md`](paper_draft.md). The longer working draft
+is at [`report.md`](report.md). Visual companions are in
+[`figures/`](figures/).
 
-Started as a single replication on real-city routes ("a small GPT trained only on
-intersection IDs recovers a metric map of the city from its activations"). The
-destroyed-structure control surfaced something unexpected, and the project
-pivoted into a multi-domain study. The cities sub-project is now the worked
-example — and the load-bearing methodological exhibit — that the rest of the
-portfolio extends.
+## What this is in one paragraph
 
-## The pivot in one paragraph
+We study whether and when small next-token transformers (0.27M to 13M
+parameters) develop linearly recoverable representations of latent task
+structure. We propose a candidate hypothesis called the N-criterion
+(encoding driven by predictive relevance for next-token prediction) and
+test it across seven domains. The maze and HTTP domains are tested via
+quantitative predictions committed to this repository before any data
+was collected or any model was trained, with the commit hashes
+verifiable from `git log --diff-filter=A` on the predictions files. Both
+pre-registered experiments falsify the strict form of the N-criterion.
+One mechanism survives ex-ante testing on both domains (architectural
+carry-through of features at positionally distinct input slots). One
+methodological failure mode is identified (position-correlation as a
+probe confound) with two controllable diagnostics that future
+probe-based work should adopt by default.
 
-A small GPT trained on routes through real cities does, in fact, produce a
-linearly-decodable geographic signal in its activations — what we initially
-read as an emergent metric map. But a destroyed-structure control (same routes,
-token order shuffled within each route) produced *higher* probe R², not lower.
-The reason: the SET of intersections in each route is itself geographically
-coherent, regardless of order. So the probe-decoded clustering does not require
-sequence learning — it appears wherever the training data has geographic
-co-occurrence. What does require sequence training is the model's ability to
-predict the next real intersection (P(A's neighbors) = 0.984 on the real model
-vs 0.063 on the shuffled). The two phenomena are distinct, with different
-sources, and both are causally encoded in the residual stream. That decomposition
-is more interesting than the single-claim original framing.
+## Seven domains
 
-## Findings so far (cities, smoke-trained)
+| # | Domain | Verdict |
+|:--|---|---|
+| 1 | Othello | Positive control reproduced (94% per-cell probe; within 0.01 of Li et al. 2022) |
+| 2 | Music | Voice-leading encoded; chord weakly encoded; beat-in-measure null on both probe and transplant |
+| 3 | Cities | Geographic structure recovered but driven primarily by embedding-table co-occurrence, not transformer computation |
+| 4 | Flight phases (ADS-B) | Moderate signal; monotone destroyed-structure gradient |
+| 5 | Symmetric-group walks | Partial signal; useful as a data point, not a clean positive control |
+| 6 | Maze navigation (pre-registered, commit `aa025b1`) | Starting cell NULL **falsified** (+0.15 gap, threshold +0.10) |
+| 7 | HTTP log sequences (pre-registered, commit `3b25ed3`) | Feature A carry-through confirmed (+0.17); Feature B computed null **falsified** (+0.22 even after position control) |
 
-Three trained models on the City of London, same architecture, differing only in
-training data:
+## The protocol
 
-| Condition                | val ppl | P(A's nbrs) | Probe R² (node-level lin) | Transplant lift on P(B's nbrs) |
-|---|---:|---:|---:|---:|
-| Real London              | 1.65    | 0.984       | 0.64                      | **+0.953** (100% target>random) |
-| Within-route shuffled    | 25.0    | 0.061       | 0.96                      | +0.247                          |
-| Global shuffled          | 313     | 0.006       | −0.02                     | +0.000 (chance)                 |
+1. Multi-seed mean ± std reporting (5 seeds, each varying untrained
+   init, sampling positions, and probe-training RNG)
+2. Probe and activation-patching convergence at the same layer
+3. Per-layer ablation
+4. Destroyed-structure corpus controls (real, within-shuffled,
+   global-shuffled)
+5. Pre-registered ex-ante predictions with a git audit trail
+6. Position-controlled probing (Design A: fixed k; Design B3:
+   residual-after-position regression)
 
-Three load-bearing methodological findings from this session:
+Items 5 and 6 are the methodological contributions of the paper.
 
-1. **MLP-probe lookup contamination on continuous targets**: at ~10³ unique
-   tokens, both linear and MLP probes can pass the standard position-level split
-   via per-token lookup. Use a node-level split (train + test on disjoint
-   token sets) for the honest signal.
-2. **Within-sequence shuffle is an insufficient destroyed-structure control**
-   when the training data's geographic co-occurrence is preserved by
-   set-membership alone. Use a global token shuffle to break it cleanly.
-3. **Pseudoinverse-direction activation patching does not isolate causal use
-   of the representation**; activation transplant (substituting a real `a_B`
-   from another position) does.
+## Pre-registration audit trail
 
-The trained `wte` is NOT a node2vec embedding of the graph (Procrustes/CKA at
-chance against random); node2vec produces *stronger* geographic decodability than
-`wte` alone. The geographic signal we found is built by the transformer's higher
-layers, not handed to the model by the embedding table.
+Two pre-registered domains, both with locked predictions before any
+model was trained or any data was collected:
 
-## Where the project is going
+```bash
+git log --diff-filter=A predictions/predictions_maze_navigation.md
+# returns commit aa025b1 (2026-05-27)
 
-A portfolio of additional domains (see `pivot.md` for the full plan):
+git log --diff-filter=A predictions/predictions_http_log_sequences.md
+# returns commit 3b25ed3 (2026-05-31)
+```
 
-| # | Domain | Probe target | Role |
-|:--|---|---|---|
-| 1 | Cities (done) | (lat, lon) | Decomposition anchor + methodology exhibit |
-| 2 | Music | Key / chord / beat | Within-domain mixed-verdict experiment |
-| 3 | Symmetric-group-GPT | Resulting permutation | Theoretical positive anchor |
-| 4 | Dialog-state (MultiWOZ) | Slot-value belief state | Applied positive (text) |
-| 5 | Flight-phase (ADS-B) | Flight phase | Applied positive (time series) |
-| 6 | Maze-GPT (optional) | Agent pose, wall map | Applied positive (spatial) |
+The predictions files are append-only after commit. Post-hoc amendments
+appear as clearly-marked additions.
 
-The working thesis: emergent world models in next-token transformers depend on
-the training distribution providing (D) discrete state, (N) state necessary for
-next-token prediction, (¬L) state not reconstructible from sequence
-co-occurrence statistics alone. The portfolio is constructed to test where each
-criterion bites.
+## Figures
+
+![Per-layer ablation](figures/03_per_layer_ablation.png)
+*Figure 3: Per-layer ablation across six (domain, feature) pairs.
+Othello and music shown via causal transplant lift; maze starting cell
+and HTTP Features A and B shown via probe gap. The bottom-right panel
+is the HTTP Feature B probe at fixed position k=5 (Design A).*
+
+![Cross-condition gradient](figures/04_cross_condition_gradient.png)
+*Figure 4: Real / within-shuffled / global-shuffled gap bars across six
+(domain, feature) pairs. The note below each panel indicates where the
+destroyed-structure monotonicity prediction holds and where it does
+not.*
+
+Two more visual companions:
+
+- [`figures/01_experimental_arc.md`](figures/01_experimental_arc.md):
+  Mermaid flowchart of the pre-register, falsify, revise, re-test arc
+  with commit hashes inline.
+- [`figures/02_results_matrix.md`](figures/02_results_matrix.md):
+  color-coded cross-domain outcome matrix.
 
 ## Quickstart
 
 ```bash
 pip install -r requirements.txt
 
-# Build a city corpus (CPU, free; needs network for the OSM pull)
-python -u data/prepare_city.py --place "City of London, Greater London, England, United Kingdom" \
-  --out_dir data/london_city
+# Pick a domain. Each domain has a prepare script and a model config.
+python -u data/prepare_city.py     --place "City of London, ..." --out_dir data/london_city
+python -u data/prepare_maze.py     --n_mazes 100000 --grid 8 --out_dir data/maze_8x8
+python -u data/prepare_http.py     --raw_dir data/nasa_http_raw --out_dir data/nasa_http
+python -u data/prepare_othello.py  --out_dir data/othello_50k
+python -u data/prepare_music.py    --out_dir data/music_bach
+python -u data/prepare_adsb.py     --out_dir data/flight_quickstart
+python -u data/prepare_symgroup.py --out_dir data/symgroup_s5
 
-# Destroyed-structure controls (two tiers)
+# Destroyed-structure controls (per domain)
 python -u data/prepare_city.py --place "City of London, ..." --shuffle_routes \
   --out_dir data/london_shuffled
 python -u data/prepare_city.py --place "City of London, ..." --shuffle_globally \
   --out_dir data/london_global_shuffled
 
-# Train a small model (M1 MPS / CUDA / CPU)
+# Train a small model
 python model/train.py --config model/configs/small.py --data_dir data/london_city
 
-# Eval suite
-python eval/valid_edge.py        --ckpt checkpoints/best.pt --data_dir data/london_city
-python eval/baselines.py         --data_dir data/london_city --ckpt checkpoints/best.pt --coherence
-python eval/probe.py             --ckpt checkpoints/best.pt --data_dir data/london_city
-python eval/transplant.py        --ckpt checkpoints/best.pt --data_dir data/london_city  # clean Phase 5
-python eval/embedding_compare.py --ckpt checkpoints/best.pt --data_dir data/london_city
+# Standard eval suite
+python eval/probe.py      --ckpt checkpoints/best.pt --data_dir data/london_city
+python eval/transplant.py --ckpt checkpoints/best.pt --data_dir data/london_city
+python eval/valid_edge.py --ckpt checkpoints/best.pt --data_dir data/london_city
+
+# Position-controlled probes (HTTP example)
+python eval/probe_http_position_control.py --ckpt CKPT --data_dir data/nasa_http
+python eval/probe_http_within_position.py  --ckpt CKPT --data_dir data/nasa_http --fixed_k 5
+python eval/probe_http_residual.py         --ckpt CKPT --data_dir data/nasa_http
 ```
 
-## The cities sub-project's THE ONE RULE
+## THE ONE RULE
 
-For cities: no coordinate, distance, or direction ever enters the model's
-input. Tokens are arbitrary intersection IDs; coordinates live only in
-`coords.csv` and are touched solely by the probe / eval / viz code. THE ONE
-RULE generalizes per-domain to "no probe-target value may appear in the
-model's input."
+For each domain: no probe-target value may appear in the model's input.
+Tokens are arbitrary identifiers; coordinates, phases, beat positions,
+cumulative counts, starting cells live only in side tables read by the
+probe and eval code, never by the model. The data preparation scripts
+assert this at the boundary where it is cheap.
 
-## Repo
+## Documents
 
-| Path | What |
+| File | What |
 |---|---|
-| `data/prepare_city.py` | OSM street network → token corpus. `--shuffle_routes` + `--shuffle_globally` flags for two-tier destroyed-structure controls. |
-| `model/` | nanoGPT-style model + training loop |
-| `eval/probe.py` | Linear + MLP probes; **both** position-level and node-level splits |
-| `eval/causal.py` | Pseudoinverse-direction patching (preserved as documented-failure mode) |
-| `eval/transplant.py` | Clean Phase 5: substitute a real `a_B` for `a_A` at a chosen layer |
-| `eval/embedding_compare.py` | `wte` vs node2vec — Procrustes + CKA + probe parity |
-| `eval/valid_edge.py` `eval/baselines.py` | intrinsic eval + analytical baselines |
+| [`paper_draft.md`](paper_draft.md) | Tight version of the paper (about 12 pages excluding references) |
+| [`report.md`](report.md) | Longer working draft in original prose |
+| [`predictions/`](predictions/) | Locked ex-ante predictions for maze and HTTP; template and example |
+| [`results_maze_navigation.md`](results_maze_navigation.md) | Confirm/falsify result tables for the maze experiment |
+| [`results_http_log_sequences.md`](results_http_log_sequences.md) | Confirm/falsify result tables for the HTTP experiment |
+| [`figures/`](figures/) | Four visual companions; see Figures section above |
+| [`CLAUDE.md`](CLAUDE.md) | Operational guide for development; per-domain conventions and commands |
+| [`CONTEXT.md`](CONTEXT.md) | Scientific framing of the project |
+| [`PLAN.md`](PLAN.md) | Phased build plan; status by phase |
 
-## Docs
+## Cities sub-project context
 
-- **`CLAUDE.md`** — operational guide; conventions, commands, current status. Read by Claude Code each session.
-- **`CONTEXT.md`** — scientific framing post-pivot; the criteria framework; what cities established.
-- **`PLAN.md`** — phased build plan; cities phases marked done, multi-domain milestones summarized.
-- **`pivot.md`** — master plan for the comparative-study pivot. Risk register, confidence summary, decision points.
-- **`STATUS_vs_OTHELLO-GPT.md`** — claim-by-claim comparison to the Othello-GPT lineage.
-- **`update_may24_final.md`** — empirical narrative of the cities decomposition session.
-- **`next_steps.md`** — short, concrete plan for the must-do experiments that just ran.
+The project began as a single replication on real-city routes
+("a small GPT trained only on intersection IDs recovers a metric map of
+the city from its activations"). The destroyed-structure control surfaced
+something unexpected: within-shuffled London scored higher on the
+geographic probe than real London. The cities domain became the worked
+example of decomposition (real, within-shuffled, and global-shuffled
+each producing a distinct internal structure) and the project pivoted
+to a multi-domain comparative study. The cities case is §5.3 of the
+paper, intentionally downplayed because most of the cities encoding
+lives in the embedding table rather than in the transformer's
+computation.
+
+History is preserved in `pivot.md` and `update_may24_final.md`. The
+cities-specific THE ONE RULE (no coordinate, distance, or direction in
+input tokens) generalizes per-domain to "no probe-target value may
+appear in the model's input."
 
 ## Not to be confused with
 
-There is a separate, unrelated **CityGPT** (Feng et al., KDD 2025,
-[arXiv:2406.13948](https://arxiv.org/abs/2406.13948)). That work *fine-tunes large
-LLMs on text instructions* to improve performance on urban benchmarks — it **gives**
-the model spatial knowledge in language and measures task scores.
-
-The cities sub-project of LatentWorldsGPT is the inverse: it **withholds** all
-spatial information and trains a small model from scratch on bare intersection
-IDs, then asks whether (and *what*) spatial structure emerges unsupervised.
-Different question, different method, different proof.
+There is a separate, unrelated CityGPT (Feng et al., KDD 2025,
+[arXiv:2406.13948](https://arxiv.org/abs/2406.13948)). That work
+fine-tunes large LLMs on text instructions to improve performance on
+urban benchmarks; it *gives* the model spatial knowledge in language
+and measures task scores. The cities sub-project of LatentWorldsGPT is
+the inverse: it *withholds* all spatial information and trains a small
+model from scratch on bare intersection IDs, then asks whether (and
+what) spatial structure emerges unsupervised. Different question,
+different method, different evidence.
 
 ## References
 
-- Li, K., et al. (2022). *Emergent World Representations: Exploring a Sequence Model Trained on a Synthetic Task* — Othello-GPT.
-- Nanda, N. (2023). *Actually, Othello-GPT Has a Linear Emergent World Representation*.
-- Karvonen, A. (2024). *Emergent World Models and Latent Variable Estimation in Chess-Playing Language Models*.
-- Perozzi, B., Al-Rfou, R., Skiena, S. (2014). *DeepWalk*; Grover, A., Leskovec, J. (2016). *node2vec*.
-- Karpathy, A. *nanoGPT* — the model + training scaffold.
+- Li, K., et al. (2022). *Emergent World Representations: Exploring a
+  Sequence Model Trained on a Synthetic Task* (Othello-GPT).
+- Nanda, N. (2023). *Actually, Othello-GPT Has a Linear Emergent World
+  Representation*.
+- Karvonen, A. (2024). *Emergent World Models and Latent Variable
+  Estimation in Chess-Playing Language Models*.
+- Elhage, N., et al. (2022). *Toy Models of Superposition*.
+- Karpathy, A. *nanoGPT*: the model and training scaffold.
+- Hewitt, J. and Liang, P. (2019). *Designing and Interpreting Probes
+  with Control Tasks*.
+- Park, K., et al. (2023). *The Linear Representation Hypothesis and
+  the Geometry of Large Language Models*.

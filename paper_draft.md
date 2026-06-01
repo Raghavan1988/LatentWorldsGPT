@@ -383,11 +383,29 @@ by the numbers and the discussion.
 
 Visual companions to this section:
 [`figures/02_results_matrix.md`](figures/02_results_matrix.md) gives an
-at-a-glance outcome matrix across every (domain, feature, condition) cell;
-[`figures/03_per_layer_ablation.png`](figures/03_per_layer_ablation.png)
-shows where each representation lives across depth;
-[`figures/04_cross_condition_gradient.png`](figures/04_cross_condition_gradient.png)
-shows the real/within/global gradient comparison across domains.
+at-a-glance outcome matrix across every (domain, feature, condition) cell.
+Figures 3 and 4 below show the per-layer ablation and the cross-condition
+gradient, respectively. Figure 1, the experimental arc flowchart, is in
+[`figures/01_experimental_arc.md`](figures/01_experimental_arc.md) and is
+also referenced from §7.
+
+![Figure 3: Per-layer ablation](figures/03_per_layer_ablation.png)
+
+**Figure 3**: Per-layer ablation across six (domain, feature) pairs
+reported in this section. Othello and music are shown via causal
+transplant lift; maze starting cell and HTTP Features A and B are shown
+via probe gap. The bottom-right panel is the HTTP Feature B probe at
+fixed position k=5 (Design A, §5.8.4), showing the trained and untrained
+accuracy lines separately.
+
+![Figure 4: Cross-condition gradient](figures/04_cross_condition_gradient.png)
+
+**Figure 4**: Real / within-shuffled / global-shuffled gap bars for six
+(domain, feature) pairs. The framework's destroyed-structure prediction
+is real > within > global. The note below each panel indicates whether
+the prediction holds (cities London, maze starting cell, and Feature A
+all deviate from monotonicity in ways discussed in the corresponding
+subsections).
 
 ### 5.1 Othello (positive control, independent reproduction)
 
