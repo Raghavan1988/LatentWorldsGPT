@@ -16,6 +16,9 @@
 
 Most mechanistic-interpretability work on emergent representations is single-domain, single-seed, and post-hoc. So we can't tell a framework that predicts the data from one that fits it after the fact. Committing a `predictions.md` file to a public repo before you train anything is a cheap fix and I think it's unreasonably underused. If 10% of probe papers started doing this, the field gets noticeably better. (Confidence ~60%.) The interesting part of this post isn't the toy-scale results. It's the audit trail showing the hypothesis change shape under contact with pre-registered evidence.
 
+**AI assistance disclosure**: The implementation was very heavily AI-assisted and Claude-enabled. Per-domain data pipelines, probe and transplant scripts, training configs, figure code, and a lot of iterative debugging were done with Claude.
+
+
 ## Setup, in one paragraph
 
 Same nanoGPT-shaped architecture across all seven domains. Only the vocabulary and corpus change. For every domain I trained three models on three corpora: **real** (the actual structured data), **within-shuffled** (tokens permuted inside each sequence, so set membership is preserved but structure is destroyed), and **global-shuffled** (tokens shuffled across the entire corpus, so set membership is destroyed too). For each (domain × condition × seed) I ran linear and MLP probes, activation transplant (splice in another prefix's residual stream and see whether the model behaves as if it's in that state), and per-layer ablation. The shuffled controls give every probe a built-in null. A probe that scores 85% on the real corpus and 80% on within-shuffled is mostly reading lexical statistics, not world state.
