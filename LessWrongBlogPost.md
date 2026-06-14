@@ -1,13 +1,12 @@
 # Two failed pre-registered predictions about when transformers form world models
 
-
 **Epistemic status**: Small multi-domain study (7 toy domains, 0.27M to 13M-param transformers). For two of the seven domains, I committed quantitative predictions to a public repo before training the models. The commits are auditable via git. Both pre-registered predictions failed. This post is about what those failures taught me. I put roughly 30 to 40% on the residual claim ("architectural carry-through") surviving the next adversarial test someone runs against it. The interesting part isn't the toy-scale results; it's the audit trail showing the hypothesis change shape under contact with pre-registered evidence. Most mechanistic-interpretability work on emergent representations is single-domain, single-seed, and post-hoc, so it's hard to separate a framework that predicts the data from one that fits it after the fact. Committing a `predictions.md` file to a public repo before training is a cheap fix, and I think it's unreasonably underused. If 10% of probe papers started doing this, the field gets noticeably better.**AI assistance disclosure**: The implementation was very heavily AI-assisted and Claude-enabled. Per-domain data pipelines, probe and transplant scripts, training configs, figure code, and a lot of iterative debugging were done with Claude.
 
 
 ## TL;DR
 
 1. Othello-GPT (Li 2022, Nanda 2023) showed a transformer can linearly encode board state. The natural follow-up: when does this generalize?
-2. I wrote down a sharp hypothesis I called the **N-criterion** (N for next-token necessity). A feature is in the residual stream iff predicting the next token requires it. I locked two derived predictions into git before running the experiments:
+2. I wrote down a sharp hypothesis I called the **N-criterion** (N for next-token necessity). A feature is in the residual stream iff predicting the next token requires it. (The *residual stream* is the per-token hidden-state vector that flows through a transformer: each attention and MLP block reads from it and writes back to it, so by the final layer it's the running summary the model uses to pick the next token. Throughout the post, "encoded in the residual stream" means a linear or MLP probe can recover the feature from this vector.) I locked two derived predictions into git before running the experiments:
    - Maze navigation, commit `aa025b1`, 2026-05-27
    - HTTP log sequences, commit `3b25ed3`, 2026-05-31
 
