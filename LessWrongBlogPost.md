@@ -1,4 +1,4 @@
-# Pre-registering 'when transformers form world models ?' : two failed predictions across seven domains
+# Pre-registering "when transformers form world models?" : two failed predictions across seven domains
 
 **Epistemic status**: Small multi-domain study (7 toy domains, 0.27M to 13M-param transformers). For two of the seven domains, I committed quantitative predictions to a public repo before training the models. The commits are auditable via git. Both pre-registered predictions failed. This post is about what those failures taught me. I put roughly 30 to 40% on the residual claim ("architectural carry-through") surviving the next adversarial test someone runs against it.
 
@@ -40,6 +40,24 @@ All numbers are 5-seed mean at the honest split (node-, piece-, flight-, maze-, 
 | 7b | **HTTP logs** ⚓ `3b25ed3` | Feature B: cumulative large-response count | **NULL** (must be aggregated) | MLP +0.291 raw, **+0.220** after position-control | ✗ **Falsified** even at fixed position |
 
 A color-coded version of the matrix is in [`figures/02_results_matrix.md`](figures/02_results_matrix.md).
+
+### Smoke fit: did the transformer actually learn the target?
+
+The probe results above are only meaningful if the model fit the task in the first place. Each domain has a per-step validity (or perplexity) check, run before any probe was wired up. For the four domains where a "valid-next-step" rate is well-defined, the smoke check itself produces the same real / within / global gradient that the rest of the paper rests on.
+
+| Domain | Smoke check | Real | Within-shuffled | Global-shuffled | Comparison |
+|---|---|---|---|---|---|
+| Othello | next-token is a legal Othello move | 82.2% | n/a | n/a | Li/Nanda ~95%; ours within range |
+| Music (Bach) | next-pitch within ±7 semitones (voice-leading validity) | 96% | 64% | 56% | Cleanest cross-condition gradient in the paper |
+| Cities (London) | next-token is an adjacent graph edge | 99.7% | 0.06% | 0.006% | Strict destroyed-structure separation |
+| Flight (ADS-B) | next-token physics-plausible (alt/vr/spd deltas in band) | 94.0% | 39.8% | 16.5% | Monotonic gradient |
+| Symmetric-group (S₈) | val perplexity | 5.90 | n/a | n/a | Uniform baseline 6.82; modest improvement |
+| Maze (8×8) | val perplexity | ~1.55 | ~1.55 | ~1.55 | Train/val/gen tightly matched, no overfit (no per-step validity script yet) |
+| HTTP logs | val perplexity | 1.54-1.58 | 1.54-1.58 | 1.54-1.58 | Per-condition perplexities tightly matched, no overfit |
+
+The two pre-registered domains (maze and HTTP) are the weakest cells in this column. Neither has a `valid_next_step` script in the repo yet, only a perplexity-and-no-overfit check. For maze the probe verdict (P4 falsified at +0.152 above untrained baseline) is robust to this gap because the comparison is *trained vs untrained on the same task*, so probe headroom is the relevant signal regardless of absolute task-fit. For HTTP the position-control diagnostic plays the same role. But a per-step validity check is worth writing for both before any second pre-registered domain goes in.
+
+### Per-layer encoding strength
 
 The per-layer view tells the second half of the story. Where in the stack does each domain's representation actually live?
 
