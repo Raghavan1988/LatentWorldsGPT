@@ -1,7 +1,4 @@
-# Pre-registering "when does next-token prediction force a world model?" - two failed predictions across seven domains
-
-**Repo (everything is here):** https://github.com/Raghavan1988/LatentWorldsGPT
-The two locked predictions files are auditable at commits `aa025b1` (maze) and `3b25ed3` (HTTP) via `git log --diff-filter=A predictions/predictions_maze_navigation.md` and `predictions/predictions_http_log_sequences.md`. All seven domain checkpoints, probe/transplant code, and the figures referenced below are in the same tree.
+# Pre-registering 'when transformers form world models ?' : two failed predictions across seven domains
 
 **Epistemic status**: Small multi-domain study (7 toy domains, 0.27M to 13M-param transformers). For two of the seven domains, I committed quantitative predictions to a public repo before training the models. The commits are auditable via git. Both pre-registered predictions failed. This post is about what those failures taught me. I put roughly 30 to 40% on the residual claim ("architectural carry-through") surviving the next adversarial test someone runs against it.
 
@@ -81,7 +78,7 @@ That's the honest summary. I started with a sharp falsifiable claim, ran two pre
 2. Are the destroyed-structure controls (within- vs global-shuffle) doing what I think they're doing? Music's voice-leading gradient (96% / 64% / 56%) is the cleanest case. I'd like someone to try to break it.
 3. The git-audited predictions setup is cheap. What failure modes am I missing? Implicit researcher degrees of freedom in what to commit to is the obvious one.
 
-All seven domains, the locked predictions files (verifiable at `aa025b1` and `3b25ed3`), the checkpoints, and the probe and transplant code are in a single small repo: https://github.com/Raghavan1988/LatentWorldsGPT. If you want to take a swing at the carry-through claim adversarially, I'd be happy about that.
+All seven domains, the locked predictions files (verifiable at `aa025b1` and `3b25ed3`), the checkpoints, and the probe and transplant code are in a single small repo: https://github.com/Raghavan1988/LatentWorldsGPT. If you want to take a swing at the carry-through claim, I'd be happy about that.
 
 ---
 
