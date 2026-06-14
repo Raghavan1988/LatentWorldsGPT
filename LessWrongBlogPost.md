@@ -1,6 +1,8 @@
-# Pre-registering "when transformers form world models?" : two failed predictions across seven domains
+# Two failed pre-registered predictions about when transformers form world models
 
-**Epistemic status**: Small multi-domain study (7 toy domains, 0.27M to 13M-param transformers). For two of the seven domains, I committed quantitative predictions to a public repo before training the models. The commits are auditable via git. Both pre-registered predictions failed. This post is about what those failures taught me. I put roughly 30 to 40% on the residual claim ("architectural carry-through") surviving the next adversarial test someone runs against it.
+
+**Epistemic status**: Small multi-domain study (7 toy domains, 0.27M to 13M-param transformers). For two of the seven domains, I committed quantitative predictions to a public repo before training the models. The commits are auditable via git. Both pre-registered predictions failed. This post is about what those failures taught me. I put roughly 30 to 40% on the residual claim ("architectural carry-through") surviving the next adversarial test someone runs against it. The interesting part isn't the toy-scale results; it's the audit trail showing the hypothesis change shape under contact with pre-registered evidence. Most mechanistic-interpretability work on emergent representations is single-domain, single-seed, and post-hoc, so it's hard to separate a framework that predicts the data from one that fits it after the fact. Committing a `predictions.md` file to a public repo before training is a cheap fix, and I think it's unreasonably underused. If 10% of probe papers started doing this, the field gets noticeably better. **AI assistance disclosure**: The implementation was very heavily AI-assisted and Claude-enabled. Per-domain data pipelines, probe and transplant scripts, training configs, figure code, and a lot of iterative debugging were done with Claude.
+
 
 ## TL;DR
 
@@ -10,14 +12,7 @@
    - HTTP log sequences, commit `3b25ed3`, 2026-05-31
 
    Audit either with `git log --diff-filter=A predictions/predictions_maze_navigation.md` (use the HTTP filename for the other). Both commits predate the corresponding data being generated or downloaded.
-3. **Both predictions failed.** Features the N-criterion said should be absent came in at +0.15 (maze starting cell) and +0.22 (HTTP cumulative count, after a position-control diagnostic). What survived the falsifications is a weaker architectural observation I'm calling **carry-through**. It's explained below.
-
-## Why I think this might interest LessWrong
-
-Most mechanistic-interpretability work on emergent representations is single-domain, single-seed, and post-hoc. So we can't tell a framework that predicts the data from one that fits it after the fact. Committing a `predictions.md` file to a public repo before you train anything is a cheap fix and I think it's unreasonably underused. If 10% of probe papers started doing this, the field gets noticeably better. (Confidence ~60%.) The interesting part of this post isn't the toy-scale results. It's the audit trail showing the hypothesis change shape under contact with pre-registered evidence.
-
-**AI assistance disclosure**: The implementation was very heavily AI-assisted and Claude-enabled. Per-domain data pipelines, probe and transplant scripts, training configs, figure code, and a lot of iterative debugging were done with Claude.
-
+3. **Both predictions failed.** Features the N-criterion said should be absent came in at +0.15 (maze starting cell) and +0.22 (HTTP cumulative count, after a position-control diagnostic). The residual after both falsifications is a weaker architectural observation I'm calling **carry-through**. It's explained below.
 
 ## Setup, in one paragraph
 
@@ -36,8 +31,8 @@ All numbers are 5-seed mean at the honest split (node-, piece-, flight-, maze-, 
 | 2b | **Music** | Chord identity | Weak | MLP +0.089 (~3σ) | ✓ Weakly confirmed |
 | 2c | **Music** | Beat-in-measure | **NULL** | MLP +0.006; beat-matched transplant moves predictions less than a random control | ✓ Strict-N negative direction (probe and causal) |
 | 3 | **Cities** (London, Manhattan, Boston) | Grid cell | Encoded | MLP +0.51 to +0.55 real; global-shuffled +0.01 | ⚠ Surface confirm, but about 0.74 of the +0.94 transplant lift is already in the embedding table at L0. Co-occurrence structure, not transformer-computed world state |
-| 4 | **Flight phase** (ADS-B) | Climb / cruise / descent | Encoded | Transplant +0.47 real / +0.31 within / +0.00 global | ✓ Clean monotonic gradient |
-| 5 | **Symmetric-group walks** (S₈) | Partial product | Encoded | MLP +0.053 real / +0.014 global | ⚠ Statistically significant, small in absolute terms. Methodology calibration, not a clean positive |
+| 4 | **Flight phase** (ADS-B) | Climb / cruise / descent | Encoded | Transplant +0.47 real / +0.31 within / +0.00 global | ✓ Monotonic gradient across conditions |
+| 5 | **Symmetric-group walks** (S₈) | Partial product | Encoded | MLP +0.053 real / +0.014 global | ⚠ Statistically significant, small in absolute terms. Methodology calibration, not a robust positive |
 | 6 | **Maze navigation** ⚓ `aa025b1` | **Starting cell at late steps** | **NULL** | **MLP +0.152** at L5 (threshold +0.10) | ✗ **Falsified** |
 | 7a | **HTTP logs** (NASA July+Aug 1995) ⚓ `3b25ed3` | Feature A: first request's size-bin | Encoded via carry-through | **MLP +0.168** at L3 (predicted ≥ 0.10) | ✓ Carry-through confirmed ex-ante on a new domain |
 | 7b | **HTTP logs** ⚓ `3b25ed3` | Feature B: cumulative large-response count | **NULL** (must be aggregated) | MLP +0.291 raw, **+0.220** after position-control | ✗ **Falsified** even at fixed position |
@@ -51,7 +46,7 @@ The probe results above are only meaningful if the model fit the task in the fir
 | Domain | Smoke check | Real | Within-shuffled | Global-shuffled | Comparison |
 |---|---|---|---|---|---|
 | Othello | next-token is a legal Othello move | 82.2% | n/a | n/a | Li/Nanda ~95%; ours within range |
-| Music (Bach) | next-pitch within ±7 semitones (voice-leading validity) | 96% | 64% | 56% | Cleanest cross-condition gradient in the paper |
+| Music (Bach) | next-pitch within ±7 semitones (voice-leading validity) | 96% | 64% | 56% | Strongest cross-condition gradient in the table |
 | Cities (London) | next-token is an adjacent graph edge | 99.7% | 0.06% | 0.006% | Strict destroyed-structure separation |
 | Flight (ADS-B) | next-token physics-plausible (alt/vr/spd deltas in band) | 94.0% | 39.8% | 16.5% | Monotonic gradient |
 | Symmetric-group (S₈) | val perplexity | 5.90 | n/a | n/a | Uniform baseline 6.82; modest improvement |
@@ -85,7 +80,7 @@ The interesting structural thing about this project isn't any single result. It'
 
 The position-control was post-hoc but load-bearing. Position-in-session correlates with the cumulative count, and the trained model develops sharper positional representations than the untrained one. So I had to separate position-as-proxy from genuine encoding. Two diagnostics, within-position probing at fixed k=5 and residual-after-position regression, both kept the gap above threshold. Worth carrying forward as a default for any probe whose target correlates with token position.
 
-**Version 2: the deflated working claim.** Carry-through survives 2-for-2 on ex-ante tests. The broader "predictive relevance drives encoding" claim is 0-for-3 on risky pre-registered predictions. Maze distance: predicted encoded, wasn't. Maze starting cell: predicted null, wasn't. HTTP Feature B: predicted null, wasn't. What's left:
+**Version 2: the deflated working claim.** Carry-through survives 2-for-2 on ex-ante tests. The broader "predictive relevance drives encoding" claim is 0-for-3 on risky pre-registered predictions. Maze distance: predicted encoded, wasn't. Maze starting cell: predicted null, wasn't. HTTP Feature B: predicted null, wasn't. The remaining claims:
 
 - Carry-through is an architectural claim, not a theory of learning. It says features at positionally distinct input slots persist in the late-layer residual stream by default. It does not say which learned features the model will construct.
 - Anything stronger than that, including any version of "the next-token objective shapes which abstract features get represented", does not have an audit-trail confirmation in this work. Music voice-leading and Othello board state are consistent with such a claim, but the music finding was post-hoc and the Othello result is independent reproduction of prior work.
@@ -103,4 +98,4 @@ All seven domains, the locked predictions files (verifiable at `aa025b1` and `3b
 
 ---
 
-Standard caveat. None of this is claimed to extend to frontier-scale models on natural language, and I'm not claiming it does. What I'd actually defend is the methodology: multi-seed, destroyed-structure controls, ex-ante git-audited predictions, position-correlation diagnostics. Not any specific result. The N-criterion is interesting mostly because it failed cleanly, and the version-by-version trail of how it failed is the part I think is most worth sharing.
+None of this is claimed to extend to frontier-scale models on natural language, and I'm not claiming it does. What I'd actually defend is the methodology: multi-seed, destroyed-structure controls, ex-ante git-audited predictions, position-correlation diagnostics. Not any specific result. The N-criterion is interesting mostly because it failed sharply, and the version-by-version trail of how it failed is the part I think is most worth sharing.
