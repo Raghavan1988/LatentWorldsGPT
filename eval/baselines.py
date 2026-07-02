@@ -1,5 +1,6 @@
 """
 LatentCityGPT — baselines (PLAN.md Phase 3).
+==========================
 
 WHAT THIS FILE DOES, IN ONE PICTURE
 ====================================
