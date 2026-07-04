@@ -258,3 +258,12 @@ data/nasa_http_global_shuffled/
 
 # Superseded placeholder drafts
 results_http_log_sequences_DRAFT.md
+
+# OS/editor scratch files
+.DS_Store
+*.swp
+*.swo
+
+# Generated local publication artifacts
+output.pdf
+lesswrong_draft.pdf

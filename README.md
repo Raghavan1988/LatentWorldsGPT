@@ -1,6 +1,6 @@
 # LatentWorldsGPT
 
-Pre-registered protocol for emergent representations in small next-token
+Pre-registered study of emergent representations in small next-token
 transformers. Seven domains. One ex-ante-validated mechanism (architectural
 carry-through). One identified probe confound (position-correlation) with
 two controllable diagnostics.
@@ -36,7 +36,7 @@ probe-based work should adopt by default.
 | 4 | Flight phases (ADS-B) | Moderate signal; monotone destroyed-structure gradient |
 | 5 | Symmetric-group walks | Partial signal; useful as a data point, not a clean positive control |
 | 6 | Maze navigation (pre-registered, commit `aa025b1`) | Starting cell NULL **falsified** (+0.15 gap, threshold +0.10) |
-| 7 | HTTP log sequences (pre-registered, commit `3b25ed3`) | Feature A carry-through confirmed (+0.17); Feature B computed null **falsified** (+0.22 even after position control) |
+| 7 | HTTP log sequences (pre-registered, commit `3b25ed3`) | Feature A input-slot persistence confirmed (+0.17); Feature B computed null **falsified** (+0.22 even after position control) |
 
 ## The protocol
 
@@ -124,13 +124,27 @@ python eval/probe_http_within_position.py  --ckpt CKPT --data_dir data/nasa_http
 python eval/probe_http_residual.py         --ckpt CKPT --data_dir data/nasa_http
 ```
 
-## THE ONE RULE
+## Probe-Target Rules
 
-For each domain: no probe-target value may appear in the model's input.
-Tokens are arbitrary identifiers; coordinates, phases, beat positions,
-cumulative counts, starting cells live only in side tables read by the
-probe and eval code, never by the model. The data preparation scripts
-assert this at the boundary where it is cheap.
+The project uses two kinds of probe targets. Keeping them separate is
+important for interpreting the results.
+
+1. **Withheld latent targets.** Coordinates, phases, beat positions,
+   chord labels, cumulative counts, and similar labels live only in
+   side tables read by probe/eval code. They are never given to the
+   model as labels or metadata. Data preparation scripts assert this
+   at the boundary where it is cheap.
+2. **Input-slot memory targets.** Some pre-registered tests ask whether
+   information that is already present in the token stream remains
+   recoverable later. Examples: the maze starting cell (the first
+   path token) and HTTP Feature A (the first request's `size_bin`
+   token). These are not hidden labels; they test input-slot
+   persistence / carry-through.
+
+The general rule is narrower than "no target value ever appears in
+input": no *withheld latent* target value may appear in the model's
+input. Input-slot memory targets are explicitly labeled as such in the
+prediction files.
 
 ## Documents
 
@@ -141,6 +155,8 @@ assert this at the boundary where it is cheap.
 | [`predictions/`](predictions/) | Locked ex-ante predictions for maze and HTTP; template and example |
 | [`results_maze_navigation.md`](results_maze_navigation.md) | Confirm/falsify result tables for the maze experiment |
 | [`results_http_log_sequences.md`](results_http_log_sequences.md) | Confirm/falsify result tables for the HTTP experiment |
+| [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md) | Canonical commands and expected artifacts for the pre-registered maze/HTTP runs |
+| [`docs/AUDIT_TRAIL.md`](docs/AUDIT_TRAIL.md) | Commit-level audit trail for locked predictions and post-hoc follow-ups |
 | [`figures/`](figures/) | Four visual companions; see Figures section above |
 | [`CLAUDE.md`](CLAUDE.md) | Operational guide for development; per-domain conventions and commands |
 | [`CONTEXT.md`](CONTEXT.md) | Scientific framing of the project |
