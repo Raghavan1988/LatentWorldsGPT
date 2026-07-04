@@ -268,7 +268,7 @@ strict null direction does not.
 - Destroyed-structure variants: append `--shuffle_within_path` or
   `--shuffle_globally`.
 - Training command:
-  `python model/train.py --config model/configs/maze_2M.py --data_dir data/maze_8x8 --out_dir checkpoints/maze_8x8 --seed 0`
+  `python model/train.py --config model/configs/small_maze.py --data_dir data/maze_8x8 --out_dir checkpoints/maze_8x8 --seed 0`
 - Probe command:
   `python eval/probe_maze.py --ckpt checkpoints/maze_8x8/best.pt --data_dir data/maze_8x8 --seeds 0 1 2 3 4`
 - Transplant per-layer:
@@ -281,3 +281,8 @@ None substantive. The P1/P2 methodological-error finding is recorded
 above and noted in `predictions/predictions_maze_navigation.md` would
 add a single-line amendment pointing here if amended; left empty per
 the locked-file protocol.
+
+Note on thresholds: the locked null prediction for starting-cell ID was
+gap `<= 0.10`; the explicit falsifier was gap `> 0.15`. The observed
+gap was `+0.152`, which both violates the predicted null band and just
+crosses the explicit falsification threshold.

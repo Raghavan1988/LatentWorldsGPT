@@ -21,10 +21,11 @@ not survive on the HTTP domain. The carry-through mechanism is
 preserved; the "null on computed features" claim is too strong.
 
 A methodological caveat applies to Feature B's falsification:
-position-in-session strongly correlates with cumulative-large-
-response count in this dataset, and the trained model's better
-positional representation may account for part of the observed
-gap. A follow-up control experiment is proposed.
+position-in-session strongly correlates with cumulative-large-response
+count in this dataset, and the trained model's better positional
+representation accounts for part of the observed gap. Post-hoc
+position controls reduce the headline gap from +0.291 to +0.220, but
+the controlled result remains above the locked falsification threshold.
 
 ## Setup as actually run
 
@@ -215,21 +216,77 @@ Reading B says the probe methodology has a confound that wasn't
 controlled for. Position is encoded by training and correlates with
 the probe target.
 
-We do not have enough data to fully disambiguate. The locked file's
-prediction P2 is falsified either way — under Reading A, the null
-claim was too strong; under Reading B, the null claim was untestable
-without a position-control feature.
+The original probe alone did not fully disambiguate these readings. We
+therefore ran the natural post-hoc position-control follow-up. These
+controls were **not pre-registered**; they are documented here as
+methodology amendments and should be pre-registered by default in future
+position-correlated probe experiments.
 
-A follow-up control experiment would resolve this: probe a feature
-that is **purely positional** (e.g., "request_idx mod 4", which is a
-function of position alone with no other content). The trained-vs-
-untrained gap on that control gives a lower bound on the "position
-contribution" to any other probe. If the cumulative-count gap drops
-to the position-control level after controlling, Reading B is correct;
-if a substantial residual gap remains, Reading A is correct.
+## Position-control follow-up
 
-This control was not pre-registered and is not within the scope of
-the current experiment. It is documented as the natural follow-up.
+### Position-control probe
+
+Target: `request_idx_in_session`, binned into four classes
+(`idx <= 3`, `idx <= 6`, `idx <= 12`, `idx >= 13`). This is a
+deterministic function of position with no content-dependent component.
+
+| Condition | Trained MLP @ L2 | Untrained MLP best | Gap |
+|---|---:|---:|---:|
+| Real | 0.836 +/- 0.009 | 0.409 +/- 0.014 | **+0.427** |
+| Within-shuffled | 0.945 +/- 0.007 | 0.404 +/- 0.026 | **+0.541** |
+| Global-shuffled | 0.828 +/- 0.011 | 0.424 +/- 0.011 | **+0.404** |
+
+Pure position information is strongly encoded by the trained model.
+The position-control gap exceeds the original Feature B gap in every
+condition, so positional encoding clearly accounts for part of the
+Feature B signal.
+
+### Design A: within-position Feature B probe at fixed k=5
+
+Restrict the Feature B probe to the size-bin slot of request 5. At a
+fixed request index, the positional embedding contribution is constant
+across examples.
+
+| Condition | Trained MLP @ L2 | Untrained MLP @ L2 | Gap |
+|---|---:|---:|---:|
+| Real | 0.904 +/- 0.006 | 0.685 +/- 0.014 | **+0.220** |
+| Within-shuffled | 0.884 +/- 0.003 | 0.685 +/- 0.014 | **+0.199** |
+| Global-shuffled | 0.825 +/- 0.008 | 0.685 +/- 0.014 | **+0.140** |
+
+After holding position constant, Feature B remains above the locked
+null threshold in all three conditions. The real-condition controlled
+gap is +0.220, compared to +0.291 in the original probe.
+
+### Design B3: residual-after-position probe
+
+Fit a per-position empirical baseline `P(F | k)` on the probe-training
+split, compute `y_onehot - baseline(k)`, and train a regression probe
+to predict that residual from activations. The metric is test R2 on the
+residual.
+
+| Condition | Trained R2 @ L2 | Untrained R2 | Gap |
+|---|---:|---:|---:|
+| Real | +0.678 +/- 0.026 | +0.210 +/- 0.012 | **+0.468** |
+| Within-shuffled | +0.639 +/- 0.024 | +0.210 +/- 0.012 | **+0.429** |
+| Global-shuffled | +0.431 +/- 0.022 | +0.210 +/- 0.012 | **+0.222** |
+
+The residual probe agrees with the fixed-position probe: Feature B is
+recoverable beyond the per-position baseline.
+
+### Joint interpretation
+
+The position controls change the magnitude but not the verdict.
+
+- The pure position probe confirms that position is a serious confound.
+- The fixed-position probe reduces the real-condition Feature B gap from
+  +0.291 to +0.220.
+- +0.220 remains above the locked falsification threshold for Feature B.
+- The residual-after-position probe gives the same qualitative verdict
+  under a different probe construction.
+
+The final reading is therefore: Feature B's original headline gap was
+position-inflated, but not purely positional. The graded framework's
+null prediction remains falsified after position control.
 
 ## Cross-condition pattern is informative
 
@@ -242,12 +299,10 @@ shuffled, and global-shuffled:
 | within-shuffled | 0.826 | 0.590 | +0.236 |
 | global-shuffled | 0.896 | 0.593 | +0.303 |
 
-This is **further evidence for Reading B**. Genuine aggregation should
-require the structure global-shuffled destroys (token identity needed
-to "attend to large-response tokens"); the fact that gap is preserved
-even when identity is permuted means whatever signal the trained
-model recovers does not depend on token identity. Position is the
-remaining candidate.
+This was initially evidence for Reading B (position-as-proxy). After
+the follow-up controls, the better interpretation is mixed: position is
+a real confound, but Feature B remains recoverable after position is
+held fixed or statistically subtracted.
 
 ## Framework revision implied by these results
 
@@ -309,11 +364,12 @@ to the framework's strength than originally hoped.
   showing commit `3b25ed3` predating any HTTP data download or model
   training.
 
-## Amendments to the predictions file
+## Post-lockdown amendments / follow-ups
 
-A methodology amendment will be added documenting the class-balanced
-probe sampling used for Feature A (the locked file did not specify
-sampling strategy; balanced sampling was a methodological choice made
-at probe time to avoid majority-class saturation on the 75% sb=4
-class). This is documented as an amendment rather than a silent
-deviation per the predictions/README.md protocol.
+- Class-balanced probe sampling was used for Feature A. The locked file
+  did not specify sampling strategy; balanced sampling was chosen at
+  probe time to avoid majority-class saturation on the 75% `sb=4`
+  class.
+- The position-control probe, fixed-position Feature B probe, and
+  residual-after-position probe were all post-hoc follow-ups prompted
+  by the Feature B ambiguity.
