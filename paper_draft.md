@@ -1,5 +1,10 @@
 # Pre-Registered Analysis of Emergent Representations in Small Next-Token Transformers: Architectural Carry-Through and a Position-Correlation Probe Confound
-## arxiv submission draft
+
+Author: [Raghavan Muthuregunathan](https://www.linkedin.com/in/raghavanmit/) 
+
+<span style="font-size: 5px;">
+This is an independent work and does not represent any of my past or present employers.</span>
+
 ## Abstract
 
 We introduce a protocol for pre-registered representational analysis in
@@ -1089,7 +1094,8 @@ bar for the small-model branch of mechanistic interpretability.
   Geometry of Large Language Models.*
 
 ---
-
+<small>This is an independent work and does not represent any of my past or present employers.</small>
+AI assisted coding disclosure:  The implementation was very heavily AI-assisted and Claude-enabled. Data pipelines for each domain, probe and transplant scripts, training configs, figure code, and a lot of iterative debugging were done with Claude.
 ## Appendix A: Reproducibility
 
 All code, data preparation pipelines, training configurations, probe
