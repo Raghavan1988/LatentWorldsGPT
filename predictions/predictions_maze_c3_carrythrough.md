@@ -228,4 +228,9 @@ If null, the LessWrong post should not hide it. The correct update would be:
 
 ## Amendments (post-lockdown)
 
-[empty until first amendment]
+- 2026-07-04: Not confirmed. The primary `t >= 9` probe produced best MLP
+  gap `+0.0532` at L5 and best linear gap `+0.0344` at L5 over five seeds,
+  landing in the pre-registered ambiguous band rather than the confirmation
+  band. The stricter `t >= 13` late-only subset produced best MLP gap
+  `+0.0322` and best linear gap `+0.0262`, below the ambiguous band. See
+  `results_maze_c3_carrythrough.md`.
