@@ -48,8 +48,10 @@ inflate the probe gap. We document this confound and run position-
 control follow-ups. We also run two post-lock HTTP carry-through
 follow-ups showing that carry-through is not limited to first request
 slots: same-request path is strongly recoverable at the request's
-size token, and previous-request path is also recoverable across a
-record boundary.
+size token, previous-request path is recoverable across a record
+boundary, and the path category of the most recent earlier large
+response is recoverable even when the source event must be selected
+by content.
 
 **Contributions**: (1) a methodological framework for pre-registered
 emergent-representation experiments, including the discovery and
@@ -1270,7 +1272,7 @@ After the original HTTP experiment, the obvious critique of
 architectural carry-through was that the positive cases were too
 easy: the maze starting cell is the first path token, and HTTP
 Feature A is the first request's `size_bin`. To test whether the
-mechanism extends beyond fixed first slots, we added two post-lock
+mechanism extends beyond fixed first slots, we added three post-lock
 follow-up predictions and committed them before running the new
 analyses:
 
@@ -1280,6 +1282,9 @@ analyses:
 - Previous-request path carry-through:
   `predictions/predictions_http_previous_request_path_carrythrough.md`
   (commit `0d115c2`).
+- Recent-large-response path carry-through:
+  `predictions/predictions_http_recent_large_response_path_carrythrough.md`
+  (commit `8d671ca`).
 
 These are not new training runs. They use the already-trained HTTP
 model and ask what is recoverable from its residual stream. The HTTP
@@ -1358,13 +1363,67 @@ modest and its usefulness after `sz_k` is tiny. This is evidence for
 cross-record residual context persistence, not merely first-token
 persistence or local two-token copying.
 
+**Most recent large-response path (`p_j`, where `j < k` and
+`size_bin_j >= 5`) at `sz_k`.** The third follow-up is a more
+adversarial test. For each current request `k`, we find the most
+recent earlier request `j` whose response size was large
+(`size_bin_j >= 5`) and ask whether the path category of that earlier
+large response is recoverable from the residual stream at the current
+size token `sz_k`. This is not a first-slot or fixed-relative-offset
+probe; the source event is content-selected.
+
+Five-seed class-balanced probe result, full lag `k - j >= 1`:
+
+| Probe | Best layer | Trained | Untrained | Gap |
+|---|---:|---:|---:|---:|
+| Linear | L3 | 0.796 | 0.238 | **+0.558** |
+| MLP | L2 | 0.871 | 0.250 | **+0.621** |
+
+The lag-filtered subset, requiring `k - j >= 3`, remains strongly
+positive:
+
+| Probe | Best layer | Trained | Untrained | Gap |
+|---|---:|---:|---:|---:|
+| Linear | L3 | 0.699 | 0.238 | **+0.460** |
+| MLP | L2 | 0.764 | 0.251 | **+0.514** |
+
+Both analyses clear the pre-specified confirmation threshold. The
+ordering also matches the qualitative prediction: same-request path
+(+0.809 MLP gap) > previous-request path (+0.674) > recent-large-
+response path (+0.621 full lag; +0.514 with lag >= 3).
+
+The paired corruption intervention gives a more cautious causal
+reading. Corrupting the selected earlier path has a small effect on
+predicting the current size token, and a still smaller effect after
+the current size token. The effect is weakest in the lag-filtered
+subset:
+
+| Sample | Lag filter | Target | ΔNLL corrupted-clean | Accuracy change |
+|---|---:|---|---:|---:|
+| Natural 50k | >= 1 | predict `sz_k` | +0.084 | -0.032 |
+| Natural 50k | >= 1 | predict token after `sz_k` | +0.009 | -0.000 |
+| Balanced 7k | >= 1 | predict `sz_k` | +0.078 | -0.024 |
+| Balanced 7k | >= 1 | predict token after `sz_k` | +0.010 | -0.002 |
+| Natural 50k | >= 3 | predict `sz_k` | +0.013 | -0.000 |
+| Natural 50k | >= 3 | predict token after `sz_k` | +0.003 | -0.001 |
+| Balanced 7k | >= 3 | predict `sz_k` | +0.012 | -0.002 |
+| Balanced 7k | >= 3 | predict token after `sz_k` | +0.004 | -0.003 |
+
+Interpretation: the residual stream contains a strong recoverable
+trace of the path attached to the most recent earlier large response,
+including when that response is at least three records back. But the
+causal intervention shows that this trace is only weakly useful for
+the immediate next-token prediction, especially under the lag filter.
+This is evidence for content-selected residual recoverability, not
+yet evidence that the model uses a robust semantic "large-response
+memory" feature.
+
 Together, these follow-ups strengthen the narrow architectural
 carry-through claim while also clarifying its limits. The model does
 not appear to preserve only currently useful variables. It preserves
 recent structured context in the residual stream; some of that context
-was locally useful one token earlier, some is only weakly useful now,
-and some remains decodable after its direct next-token usefulness has
-mostly passed.
+is locally useful, some is only weakly useful, and some remains
+decodable after its direct next-token usefulness has mostly passed.
 
 #### 7.2.6 What the HTTP experiment shows
 
@@ -1378,15 +1437,18 @@ both Design A (within-position at fixed k=5) and Design B3
 (residual-after-position), Feature B retains a +0.22 trained-vs-
 untrained gap, still well above the pre-registered 0.10 threshold.
 
-The two post-lock carry-through follow-ups in §7.2.5 further show
+The three post-lock carry-through follow-ups in §7.2.5 further show
 that HTTP carry-through is not limited to fixed first-request slots:
 same-request path is recoverable at the size token with MLP gap
 +0.81, and previous-request path is recoverable across a record
-boundary with MLP gap +0.67. Interventions qualify the interpretation:
-same-request path is locally useful for predicting size, while
-previous-request path is only modestly useful, and both have little
-direct usefulness after the size token. The result is best described
-as residual persistence of recent structured context, not a claim that
+boundary with MLP gap +0.67. A content-selected version, the path of
+the most recent earlier large response, is also recoverable with MLP
+gap +0.62 at full lag and +0.51 when requiring at least three
+intervening request records. Interventions qualify the interpretation:
+same-request path is locally useful for predicting size, previous-
+request path is only modestly useful, and recent-large-response path
+is weakly useful once lag-filtered. The result is best described as
+residual persistence of recent structured context, not a claim that
 the model selectively represents only next-token-useful features.
 
 The maze experiment had previously falsified the strict form and
