@@ -1,7 +1,8 @@
 # Figures
 
-Visual companions to `paper_draft.md` and `report.md`. Each figure
-is self-contained and references the corresponding paper sections.
+Visual companions to [`paper_draft.md`](../docs/paper/paper_draft.md) and
+[`report.md`](../docs/paper/report.md). Each figure is self-contained and
+references the corresponding paper sections.
 
 | # | File | Format | What it shows |
 |---|---|---|---|
@@ -21,7 +22,7 @@ python figures/04_cross_condition_gradient.py
 
 | Figure | Best paired with |
 |---|---|
-| 1 (experimental arc) | `paper_draft.md` §4.11, `report.md` §4.10 |
-| 2 (results matrix) | `paper_draft.md` §5.9, `report.md` §7.3 |
-| 3 (per-layer ablation) | `paper_draft.md` §5.6, `report.md` §5.3 |
-| 4 (cross-condition gradient) | `paper_draft.md` §3.3 and §5, `report.md` §4.2 and §5 |
+| 1 (experimental arc) | [`paper_draft.md`](../docs/paper/paper_draft.md) §4.11, [`report.md`](../docs/paper/report.md) §4.10 |
+| 2 (results matrix) | [`paper_draft.md`](../docs/paper/paper_draft.md) §5.9, [`report.md`](../docs/paper/report.md) §7.3 |
+| 3 (per-layer ablation) | [`paper_draft.md`](../docs/paper/paper_draft.md) §5.6, [`report.md`](../docs/paper/report.md) §5.3 |
+| 4 (cross-condition gradient) | [`paper_draft.md`](../docs/paper/paper_draft.md) §3.3 and §5, [`report.md`](../docs/paper/report.md) §4.2 and §5 |
