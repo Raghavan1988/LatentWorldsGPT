@@ -3,9 +3,10 @@
 > **Status update — 2026-07-04 (current).** The May build plan is now
 > historical. The project has moved through maze and HTTP pre-registration,
 > with the broad N-criterion falsified and the narrower architectural
-> carry-through mechanism supported by HTTP follow-ups. See `update_july4.md`
-> for today's work and `paper_draft.md` / `report.md` for the current
-> write-up state.
+> carry-through mechanism supported by HTTP follow-ups. See
+> [`update_july4.md`](../history/update_july4.md) for today's work and
+> [`paper_draft.md`](../paper/paper_draft.md) /
+> [`report.md`](../paper/report.md) for the current write-up state.
 
 > **Status update — 2026-05-27 (then-current).** Flight-phase
 > Milestone 4 landed (`updateMay27.md`). Applied positive control:

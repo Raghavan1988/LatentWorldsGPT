@@ -20,7 +20,7 @@
 
 Same nanoGPT-shaped architecture across all seven domains; only the vocabulary and corpus change. For every domain I trained three models on three corpora. The **real** corpus is the actual structured data. The **within-shuffled** corpus permutes tokens inside each sequence, so set membership is preserved but structure is destroyed. The **global-shuffled** corpus shuffles tokens across the entire corpus, destroying set membership too. For each combination of domain, condition, and seed I ran three things on the trained checkpoint: linear and MLP probes; an activation transplant, where I splice another prefix's residual stream into the position under test and check whether the model now behaves as if it were in that state; and a layer-by-layer ablation. The shuffled controls give every probe a built-in null. A probe that scores 85% on the real corpus and 80% on within-shuffled is mostly reading lexical statistics, not world state.
 
-![Cross-condition gradient across domains](figures/04_cross_condition_gradient.png)
+![Cross-condition gradient across domains](../../figures/04_cross_condition_gradient.png)
 
 ## All seven domains vs the N-criterion
 
@@ -42,7 +42,7 @@ All numbers below are 5-seed means at the honest split for that domain (node lev
 | 7d | **HTTP follow-up** ⚓ `0d115c2` | Previous-request path `p_{k-1}` at `sz_k` | Encoded | **MLP +0.674** | ✓ Cross-record carry-through |
 | 7e | **HTTP follow-up** ⚓ `8d671ca` | Most recent earlier large-response path `p_j` at `sz_k` | Weakly encoded | **MLP +0.621** full lag, **+0.514** at lag ≥3 | ✓ Content-selected earlier-event recoverability |
 
-A color-coded version of the matrix is in [`figures/02_results_matrix.md`](figures/02_results_matrix.md).
+A color-coded version of the matrix is in [`figures/02_results_matrix.md`](../../figures/02_results_matrix.md).
 
 ### Smoke fit: did the transformer actually learn the target?
 
@@ -64,7 +64,7 @@ The two pre-registered domains (maze and HTTP) are the weakest cells in this col
 
 The layer-by-layer view tells the second half of the story. Where in the stack does each domain's representation actually live?
 
-![Encoding strength by layer across domains](figures/03_per_layer_ablation.png)
+![Encoding strength by layer across domains](../../figures/03_per_layer_ablation.png)
 
 Cities is mostly L0 (the embedding table). Music's voice-leading jumps from L0 to L1, meaning it's built by the first transformer block from context rather than read off the embedding. Othello builds gradually and peaks at L4. The shape of these curves is what made the cities case feel qualitatively different from Othello and music, and it's what eventually pushed me to take pre-registration more seriously.
 

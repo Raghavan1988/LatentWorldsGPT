@@ -2,17 +2,17 @@
 
 This file summarizes the evidence chain for the two pre-registered
 experiments. It is intentionally short; the detailed locked predictions and
-result tables remain in `predictions/` and the `results_*.md` files.
+result tables remain in `../predictions/` and `docs/results/`.
 
 ## Locked Prediction Commits
 
 | Experiment | Prediction file | Locked commit | Date | Result file |
 |---|---|---|---|---|
-| Maze navigation | `predictions/predictions_maze_navigation.md` | `aa025b1` | 2026-05-27 | `results_maze_navigation.md` |
-| HTTP log sequences | `predictions/predictions_http_log_sequences.md` | `3b25ed3` | 2026-05-31 | `results_http_log_sequences.md` |
-| HTTP same-request path follow-up | `predictions/predictions_http_same_request_path_carrythrough.md` | `88155b4` | 2026-07-04 | `results_http_log_sequences.md` |
-| HTTP previous-request path follow-up | `predictions/predictions_http_previous_request_path_carrythrough.md` | `0d115c2` | 2026-07-04 | `results_http_log_sequences.md` |
-| HTTP recent-large-response path follow-up | `predictions/predictions_http_recent_large_response_path_carrythrough.md` | `8d671ca` | 2026-07-04 | `results_http_log_sequences.md` |
+| Maze navigation | [`predictions_maze_navigation.md`](../predictions/predictions_maze_navigation.md) | `aa025b1` | 2026-05-27 | [`results_maze_navigation.md`](results/results_maze_navigation.md) |
+| HTTP log sequences | [`predictions_http_log_sequences.md`](../predictions/predictions_http_log_sequences.md) | `3b25ed3` | 2026-05-31 | [`results_http_log_sequences.md`](results/results_http_log_sequences.md) |
+| HTTP same-request path follow-up | [`predictions_http_same_request_path_carrythrough.md`](../predictions/predictions_http_same_request_path_carrythrough.md) | `88155b4` | 2026-07-04 | [`results_http_log_sequences.md`](results/results_http_log_sequences.md) |
+| HTTP previous-request path follow-up | [`predictions_http_previous_request_path_carrythrough.md`](../predictions/predictions_http_previous_request_path_carrythrough.md) | `0d115c2` | 2026-07-04 | [`results_http_log_sequences.md`](results/results_http_log_sequences.md) |
+| HTTP recent-large-response path follow-up | [`predictions_http_recent_large_response_path_carrythrough.md`](../predictions/predictions_http_recent_large_response_path_carrythrough.md) | `8d671ca` | 2026-07-04 | [`results_http_log_sequences.md`](results/results_http_log_sequences.md) |
 
 Verify locally:
 

@@ -6,12 +6,14 @@
 > surviving claim is architectural carry-through plus a position-correlation
 > probe-confound lesson. The July 4 HTTP follow-ups show carry-through beyond
 > first slots: same-request path, previous-request path, and content-selected
-> recent-large-response path are all recoverable. See `update_july4.md`.
+> recent-large-response path are all recoverable. See
+> [`update_july4.md`](../history/update_july4.md).
 
 **Status:** Proposed 2026-05-24; updated 2026-05-24 evening with empirical
 results from the must-do experiments. Supersedes the single-domain framing
-in `CONTEXT.md` and `PLAN.md` but does not replace any code. Read alongside
-`STATUS_vs_OTHELLO-GPT.md` and `update_may24_final.md` for the
+in [`CONTEXT.md`](CONTEXT.md) and [`PLAN.md`](PLAN.md) but does not replace
+any code. Read alongside [`STATUS_vs_OTHELLO-GPT.md`](STATUS_vs_OTHELLO-GPT.md)
+and [`update_may24_final.md`](../history/update_may24_final.md) for the
 data-pipeline-level results; see the new section "Empirical results from
 the must-do experiments" below for the causal-intervention results that
 strengthen the pivot.

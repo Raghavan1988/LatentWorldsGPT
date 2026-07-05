@@ -133,21 +133,21 @@ what counts as evidence.
 ### 1.5 Visual companions
 
 Four figures support this paper and are available in the
-[`figures/`](figures/) directory of the project repository. Readers
+[`figures/`](../../figures/) directory of the project repository. Readers
 who prefer a visual summary before the prose may find them useful.
 
-- **Figure 1**: [`figures/01_experimental_arc.md`](figures/01_experimental_arc.md).
+- **Figure 1**: [`figures/01_experimental_arc.md`](../../figures/01_experimental_arc.md).
   Mermaid flowchart of the pre-register, falsify, revise, re-test arc,
   with commit hashes and gap numbers inline. Renders directly on
   GitHub. The single best entry point for readers who want to see the
   scientific timeline at a glance before reading the experimental
   sections.
-- **Figure 2**: [`figures/02_results_matrix.md`](figures/02_results_matrix.md).
+- **Figure 2**: [`figures/02_results_matrix.md`](../../figures/02_results_matrix.md).
   Color-coded outcome matrix across every (domain, feature, condition)
   cell tested in the paper. Includes a summary scorecard.
-- **Figure 3**: [`figures/03_per_layer_ablation.png`](figures/03_per_layer_ablation.png).
+- **Figure 3**: [`figures/03_per_layer_ablation.png`](../../figures/03_per_layer_ablation.png).
   Per-layer encoding strength across domains. Embedded in §5.
-- **Figure 4**: [`figures/04_cross_condition_gradient.png`](figures/04_cross_condition_gradient.png).
+- **Figure 4**: [`figures/04_cross_condition_gradient.png`](../../figures/04_cross_condition_gradient.png).
   Cross-condition gradient comparison across domains. Embedded in §5.
 
 Figure 1 is the recommended starting point. It is referenced again from
@@ -417,14 +417,14 @@ N-criterion. Each subsection opens with a one-sentence verdict followed
 by the numbers and the discussion.
 
 Visual companions to this section:
-[`figures/02_results_matrix.md`](figures/02_results_matrix.md) gives an
+[`figures/02_results_matrix.md`](../../figures/02_results_matrix.md) gives an
 at-a-glance outcome matrix across every (domain, feature, condition) cell.
 Figures 3 and 4 below show the per-layer ablation and the cross-condition
 gradient, respectively. Figure 1, the experimental arc flowchart, is in
-[`figures/01_experimental_arc.md`](figures/01_experimental_arc.md) and is
+[`figures/01_experimental_arc.md`](../../figures/01_experimental_arc.md) and is
 also referenced from §7.
 
-![Figure 3: Per-layer ablation](figures/03_per_layer_ablation.png)
+![Figure 3: Per-layer ablation](../../figures/03_per_layer_ablation.png)
 
 **Figure 3**: Per-layer ablation across six (domain, feature) pairs
 reported in this section. Othello and music are shown via causal
@@ -433,7 +433,7 @@ via probe gap. The bottom-right panel is the HTTP Feature B probe at
 fixed position k=5 (Design A, §5.8.4), showing the trained and untrained
 accuracy lines separately.
 
-![Figure 4: Cross-condition gradient](figures/04_cross_condition_gradient.png)
+![Figure 4: Cross-condition gradient](../../figures/04_cross_condition_gradient.png)
 
 **Figure 4**: Real / within-shuffled / global-shuffled gap bars for six
 (domain, feature) pairs. The framework's destroyed-structure prediction
@@ -868,7 +868,7 @@ We make two specific recommendations:
 ### 7.1 The experimental arc as it actually unfolded
 
 The scientific timeline can be seen at a glance in
-[`figures/01_experimental_arc.md`](figures/01_experimental_arc.md). The
+[`figures/01_experimental_arc.md`](../../figures/01_experimental_arc.md). The
 prose summary, with the specific decisions made at each step:
 
 The work began with the strict N-criterion as the falsifiable target. Its
@@ -1171,6 +1171,7 @@ See repository for the `git log --diff-filter=A` audit verification.
 ## Appendix D: Full multi-seed result tables
 
 60+ tables across all (domain × feature × condition × layer ×
-probe-type) cells. See `results_maze_navigation.md`,
-`results_http_log_sequences.md`, and per-domain update files in the
-repository.
+probe-type) cells. See
+[`results_maze_navigation.md`](../results/results_maze_navigation.md),
+[`results_http_log_sequences.md`](../results/results_http_log_sequences.md),
+and per-domain update files in the repository.

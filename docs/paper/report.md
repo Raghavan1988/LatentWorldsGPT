@@ -596,15 +596,15 @@ future probe-based work should control for.
 interprets the arc.
 
 A flowchart version of this same arc, with commit hashes and gap numbers
-inline, is in [`figures/01_experimental_arc.md`](figures/01_experimental_arc.md)
+inline, is in [`figures/01_experimental_arc.md`](../../figures/01_experimental_arc.md)
 (renders directly on GitHub via Mermaid). A color-coded outcome matrix
 across all (domain, feature, condition) cells is in
-[`figures/02_results_matrix.md`](figures/02_results_matrix.md). A per-layer
+[`figures/02_results_matrix.md`](../../figures/02_results_matrix.md). A per-layer
 ablation chart and a cross-condition gradient chart are at
-[`figures/03_per_layer_ablation.png`](figures/03_per_layer_ablation.png) and
-[`figures/04_cross_condition_gradient.png`](figures/04_cross_condition_gradient.png).
+[`figures/03_per_layer_ablation.png`](../../figures/03_per_layer_ablation.png) and
+[`figures/04_cross_condition_gradient.png`](../../figures/04_cross_condition_gradient.png).
 Readers who prefer the visual summaries before the prose may find
-[`figures/README.md`](figures/README.md) a useful entry point.
+[`figures/README.md`](../../figures/README.md) a useful entry point.
 
 ---
 
@@ -618,7 +618,7 @@ separately in §6.1 because — as we will discuss — the cities domain
 has a subtle confound that makes it less informative than it first
 appears.
 
-![Per-layer ablation](figures/03_per_layer_ablation.png)
+![Per-layer ablation](../../figures/03_per_layer_ablation.png)
 
 **Figure 3** (above): Per-layer ablation across the six
 (domain, feature) pairs reported in §5 and §7. Othello and music are
@@ -627,7 +627,7 @@ A and B are shown via probe gap. The bottom-right panel is the HTTP
 Feature B probe at fixed position k=5 (Design A, §7.2.4), showing the
 trained and untrained accuracy lines separately.
 
-![Cross-condition gradient](figures/04_cross_condition_gradient.png)
+![Cross-condition gradient](../../figures/04_cross_condition_gradient.png)
 
 **Figure 4** (above): Real / within-shuffled / global-shuffled gap
 comparison across six (domain, feature) pairs. The framework's
