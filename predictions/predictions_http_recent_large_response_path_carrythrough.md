@@ -197,4 +197,12 @@ full theory of transformer memory.
 
 ## Amendments (post-lockdown)
 
-[empty until first amendment]
+- 2026-07-04: Strongly confirmed by probes, with cautious intervention
+  interpretation. Full lag `>= 1`: best linear gap `+0.558` at L3 and best
+  MLP gap `+0.621` at L2. Lag `>= 3`: best linear gap `+0.460` at L3 and
+  best MLP gap `+0.514` at L2. This preserves the predicted ordering:
+  same-request `+0.809` > previous-request `+0.674` > recent-large-response
+  `+0.621` full lag. Corruption effects were weak, especially at lag `>= 3`
+  (`+0.013` natural dNLL on `sz_k`, `+0.003` after `sz_k`), so this should be
+  described as strong residual recoverability of a content-selected earlier
+  event, not proof of a robust semantic memory feature.

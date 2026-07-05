@@ -1,5 +1,12 @@
 # CONTEXT.md — scientific framing after the 2026-05-24 pivot
 
+> **Current status — 2026-07-04.** This file is historical framing from the
+> May pivot. The current repo-level story is in `update_july4.md`,
+> `paper_draft.md`, and `report.md`: the broad N-criterion did not survive
+> the maze and HTTP pre-registered tests; the narrower surviving mechanism is
+> architectural carry-through, now supported by three HTTP follow-ups beyond
+> first-slot copying. Position-correlation remains the main probe confound.
+
 `CLAUDE.md` is the operational summary; this file is "understand the project
 deeply before changing anything." Read alongside `pivot.md` (master plan for
 the pivot), `update_may24_final.md` (empirical narrative of the cities

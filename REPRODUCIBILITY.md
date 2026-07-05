@@ -141,3 +141,60 @@ The headline HTTP results are:
 | Feature B (`cumulative_large_response_binned`) | raw MLP gap `+0.291` |
 | Feature B at fixed `k=5` | MLP gap `+0.220` |
 | Feature B residual-after-position | R2 gap `+0.468` |
+
+### HTTP Carry-Through Follow-Ups
+
+```bash
+python eval/probe_http_same_request_path.py \
+  --per_class_n 1000 \
+  --epochs 8 \
+  --seeds 0 1 2 3 4
+
+python eval/intervene_http_path_token.py \
+  --natural_n 50000 \
+  --per_class_n 1000 \
+  --batch_size 512
+
+python eval/probe_http_previous_request_path.py \
+  --per_class_n 1000 \
+  --epochs 8 \
+  --seeds 0 1 2 3 4
+
+python eval/intervene_http_previous_path_token.py \
+  --natural_n 50000 \
+  --per_class_n 1000 \
+  --batch_size 512
+
+python eval/probe_http_recent_large_response_path.py \
+  --min_lag 1 \
+  --per_class_n 1000 \
+  --epochs 8 \
+  --seeds 0 1 2 3 4
+
+python eval/probe_http_recent_large_response_path.py \
+  --min_lag 3 \
+  --per_class_n 1000 \
+  --epochs 8 \
+  --seeds 0 1 2 3 4
+
+python eval/intervene_http_recent_large_response_path.py \
+  --min_lag 1 \
+  --natural_n 50000 \
+  --per_class_n 1000 \
+  --batch_size 512
+
+python eval/intervene_http_recent_large_response_path.py \
+  --min_lag 3 \
+  --natural_n 50000 \
+  --per_class_n 1000 \
+  --batch_size 512
+```
+
+Headline follow-up results:
+
+| Target | Headline |
+|---|---:|
+| Same-request path `p_k` at `sz_k` | MLP gap `+0.809` |
+| Previous-request path `p_{k-1}` at `sz_k` | MLP gap `+0.674` |
+| Recent-large-response path, lag `>= 1` | MLP gap `+0.621` |
+| Recent-large-response path, lag `>= 3` | MLP gap `+0.514` |

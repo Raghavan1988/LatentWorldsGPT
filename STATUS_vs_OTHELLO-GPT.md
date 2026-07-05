@@ -1,10 +1,17 @@
 # LatentCityGPT vs Othello-GPT — current status and what proper training will show
 
+> **Update — 2026-07-04 (current).** This file is a historical stock-take for
+> the city/Othello comparison. The current paper framing has moved beyond this:
+> maze and HTTP pre-registration falsified the broad N-criterion; architectural
+> carry-through is the surviving mechanism; and the July 4 HTTP path follow-ups
+> test carry-through beyond first-slot copying. See `update_july4.md`,
+> `paper_draft.md`, and `report.md`.
+
 This is a stock-take comparing the experiment's progress to the Othello-GPT lineage
 it is modeled on, and a calibrated prediction of what changes when we move from
 the current smoke-trained models to proper (medium-config, full-corpus) training.
 
-> **Update — 2026-05-27 (most recent).** Multi-seed retrofit landed on
+> **Update — 2026-05-27 (then-current).** Multi-seed retrofit landed on
 > all 4 probe domains — `update_week1.md` has the full mean ± std
 > table. Two fixes underpin the new numbers:
 > (a) `eval/probe_othello.py`, `eval/probe_music.py`, `eval/probe_symgroup.py`,

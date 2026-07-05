@@ -45,7 +45,7 @@ The HTTP cumulative-count falsification also reveals a methodological
 issue: position-in-session correlates strongly with the target
 feature, and the trained model's superior positional representations
 inflate the probe gap. We document this confound and run position-
-control follow-ups. We also run two post-lock HTTP carry-through
+control follow-ups. We also run three post-lock HTTP carry-through
 follow-ups showing that carry-through is not limited to first request
 slots: same-request path is strongly recoverable at the request's
 size token, previous-request path is recoverable across a record
@@ -216,11 +216,13 @@ predicted irrelevant but found encoded would falsify the "only if"
 direction. We will see below that the data does the second of these
 in at least one pre-registered case.
 
-### 2.3 The graded form (what we actually argue)
+### 2.3 The graded form (the candidate revision we tested)
 
-The graded form is what we believe the evidence supports:
+The graded form was our post-maze candidate revision. It is still a
+useful way to state the carry-through mechanism, but the full form is
+not what the later evidence supports:
 
-> **Graded N-criterion.** The predictive relevance of a candidate
+> **Candidate graded N-criterion.** The predictive relevance of a candidate
 > feature F for next-token prediction is the dominant driver of
 > whether F emerges as a linearly recoverable representation in the
 > residual stream of a trained next-token transformer. Features that
@@ -231,10 +233,11 @@ The graded form is what we believe the evidence supports:
 > in the input at a positionally distinct slot, and self-attention
 > can copy it forward across layers at essentially zero cost.
 
-This form is weaker than the strict one. It is also closer to what
-the data actually shows. It is more **mechanistically specific** in
-one important way: it identifies the asymmetry in how next-token
-training shapes residual content.
+This form is weaker than the strict one. Its positive carry-through
+half is closer to what the data shows; its broader null/usefulness
+half fails. It is more **mechanistically specific** in one important
+way: it identifies the asymmetry in how next-token training shapes
+residual content.
 
 **The asymmetry of training pressure.** The strict form implicitly
 assumed two gradients act on the residual stream: a pressure to
@@ -282,6 +285,9 @@ We will see in §6.4 and §7 that the **carry-through half of this
 split survives ex-ante testing on two different domains**: maze
 starting-cell encoded as predicted by carry-through (§7.1); HTTP
 first-request `size_bin` encoded as predicted by carry-through (§7.2).
+The July 4 HTTP follow-ups then added three narrower carry-through
+tests outside the original first-token slot: same-request path size,
+previous-request path size, and recent-large-response path size.
 
 The **null half does not survive**. In the maze experiment, the
 predictively-required feature distance-to-goal — which the framework
@@ -289,7 +295,7 @@ expected to be encoded — turned out to be null (§7.1). In the HTTP
 experiment, the predictively-irrelevant computed feature
 cumulative-large-response-count — which the framework expected to be
 null — turned out to be encoded (§7.2). Both directions of the null
-prediction failed across the two pre-registered tests.
+prediction failed across the two original pre-registered tests.
 
 We retain the graded form in this section as the candidate framework
 the experiments were designed to test, because it is what the
@@ -324,11 +330,13 @@ direction of the criterion ("features the model needs are encoded")
 is already established. Replicating that direction in a new domain is
 useful but not surprising. The risky, load-bearing claim is the
 *negative* direction: features predicted to be irrelevant should be
-absent even though they are decodable from the input. The music
-beat-in-measure null (§6.4) is the cleanest post-hoc instance, and the
-pre-registered maze starting-cell experiment (§7) is its prospective
-counterpart. The maze case is the central scientific test of the
-paper.
+absent even though they are decodable from the input. That strong
+negative claim did not survive the pre-registered maze and HTTP tests.
+The remaining scientific payload is therefore narrower: self-attention
+can preserve positionally accessible facts even after their immediate
+token-prediction use has passed, and the repo now contains multiple
+pre-registered examples where that prediction was made before looking
+at the result.
 
 ---
 
@@ -574,13 +582,15 @@ threshold. The graded form's null direction is falsified even after
 controls.
 
 **Step 7. Where we land.** Architectural carry-through survives 2-for-2
-across the two pre-registered domains. The broader N-criterion in either
-strict or graded form does not. The paper's three contributions follow
-directly from this arc: (i) the pre-register, falsify, revise, re-test
-loop as a methodology discipline; (ii) architectural carry-through as
-the one substantively predictive claim that survived two ex-ante tests;
-and (iii) position-correlation as a methodological caveat that future
-probe-based work should control for.
+across the two original pre-registered domains, then receives narrower
+support from three locked HTTP follow-ups beyond first-slot copying. The
+broader N-criterion in either strict or graded form does not survive as a
+strong predictive theory. The paper's three contributions follow directly
+from this arc: (i) the pre-register, falsify, revise, re-test loop as a
+methodology discipline; (ii) architectural carry-through as the one
+substantively predictive claim that survived two ex-ante tests and three
+follow-ups; and (iii) position-correlation as a methodological caveat that
+future probe-based work should control for.
 
 §7 gives the full empirical detail for Steps 1 through 6. §9 (Discussion)
 interprets the arc.
@@ -1475,10 +1485,11 @@ the explanatory mechanism), and again when tested in the HTTP
 Feature A case (where it was a forward-looking pre-registered
 prediction on a domain not used to develop the mechanism). This is
 the kind of cross-domain ex-ante validation that gives the carry-
-through claim meaningful empirical weight. The later HTTP same-request
-and previous-request path follow-ups (§7.2.5) add narrower support:
-carry-through is not confined to first tokens or fixed absolute
-positions, and can cross a repeated-record boundary.
+through claim meaningful empirical weight. The later HTTP same-request,
+previous-request, and recent-large-response path follow-ups (§7.2.5) add
+narrower support: carry-through is not confined to first tokens or fixed
+absolute positions, can cross a repeated-record boundary, and can leave a
+recoverable trace of a content-selected earlier event.
 
 **The broader "predictive relevance drives encoding" framing: 0-for-3
 on risky predictions.** Sometimes predictively-required features are
@@ -1572,16 +1583,14 @@ not predict this in advance and we do not have a clean test of the
 explanation. It is a real result that we surface here rather than
 explain away.
 
-### 8.6 One pre-registered domain
+### 8.6 Limited number of pre-registered domains
 
-The pre-registered maze experiment is one ex-ante test. The strong
-form of the pre-registration argument requires multiple
-independent tests; one falsified prediction does not allow us to
-fully rule out post-hoc story-telling about other domains. We view
-the maze experiment as a *first* prospective test of the
-N-criterion's negative direction and a model for future
-pre-registrations rather than as a conclusive cross-domain
-demonstration.
+The maze and HTTP experiments are two ex-ante tests, not a large
+prospective benchmark. The strong form of the pre-registration argument
+would require multiple independent domains and adversarially chosen
+features. We view these experiments as initial prospective tests and a
+model for future pre-registrations rather than as a conclusive
+cross-domain demonstration.
 
 ### 8.7 P1 and P2 of the maze predictions were methodologically flawed
 
@@ -1620,28 +1629,22 @@ falsification threshold, at depth L5 of a 6-layer model). The
 information persisted because the input made it trivially carryable,
 not because the objective demanded it.
 
-### 9.2 What the graded form does say
+### 9.2 What survives of the graded form
 
-The graded form — predictive relevance is the **dominant driver** of
-which features are linearly recoverable from the residual stream,
-with architectural carry-through as a second mechanism for input-
-borne features — remains consistent with the data. Music beat-in-
-measure was correctly predicted to be absent (null on both probe and
-transplant). Voice-leading was correctly predicted to be present.
-Chord was correctly predicted to be weakly present. Symgroup partial
-product shows a partial-signal pattern. Even the cities embedding-
-table result is consistent with predictive co-occurrence statistics
-driving emergent geographic clustering.
+The graded form had two parts: a positive carry-through mechanism and a
+broader negative claim that computed predictively-irrelevant features should
+be absent. The positive part survives. Maze starting-cell, HTTP Feature A,
+and the three HTTP path follow-ups all support the idea that input-borne
+structured context can remain recoverable in the residual stream even when
+immediate next-token usefulness is weak or already past.
 
-The trade-off should be made plain. The strict form is more
-informative and more falsifiable; the graded form is more
-defensible. The graded form is *not* simply the strict form
-weakened — it identifies a specific mechanism (architectural carry-
-through) that the strict form did not predict, makes that mechanism
-testable, and uses it to explain previously incompatible results.
-We do not have a way to make the strict form survive the maze
-evidence. We therefore adopt the graded form as our working
-hypothesis.
+The broader negative claim does not survive. HTTP Feature B remains encoded
+above the locked threshold even after position controls, and the recent-
+large-response follow-up shows a content-selected earlier event can be
+strongly decodable even when corruption has only a weak immediate loss
+effect. We therefore do **not** adopt the graded N-criterion as a strong
+predictive theory. We retain only the narrower carry-through mechanism as
+the empirical claim supported by the audit trail.
 
 ### 9.3 Beat null and starting-cell encoding are jointly informative
 
@@ -1683,43 +1686,24 @@ falsification did not just lose a bet. It revealed why the beat
 null could be predicted *in advance* by the revised framework, in a
 way the strict framework could not have done.
 
-### 9.4 A new risky prediction the revised framework should make
+### 9.4 The next risky prediction should be causal, not just decodable
 
-A revised framework that fits the existing data without making
-new risky predictions is not scientifically informative. The graded
-form does make such predictions, and they are concrete enough to
-be pre-registered for a future experiment.
+After the July 4 HTTP follow-ups, another probe-only carry-through result has
+diminishing returns. The next useful pre-registration should separate three
+possibilities:
 
-The next test we propose for the framework — and would commit to
-in writing before running, following the same audit-trail protocol
-used in §7 — is a domain in which we pre-register predictions for
-*two* predictively-irrelevant features chosen deliberately to span
-the carry-through split:
+- the feature is recoverable from the residual stream;
+- corrupting the source feature changes the next-token loss at the probe
+  point;
+- the effect persists after the point where the feature is locally useful.
 
-- **Feature A**: predictively irrelevant, present at a positionally
-  distinct input slot. Predicted: encoded.
-- **Feature B**: predictively irrelevant, not present at any single
-  input slot, would require active computation to recover.
-  Predicted: null.
-
-Concretely, a TCP-state-recovery task would offer source IP of the
-connection initiator (present at the first packet, irrelevant
-post-handshake) as Feature A and the connection's total
-retransmission count (must be computed across packets, irrelevant
-to next-packet prediction) as Feature B. A program-execution-trace
-task or a multi-turn dialog-state task could be structured
-similarly. The choice of domain matters less than the construction:
-two irrelevant features chosen to differ only in whether
-carry-through applies.
-
-A confirm on both predictions would earn the graded framework
-real credibility on its negative direction — including a specific
-positive prediction it could only have been making *because* the
-maze starting-cell result happened. A falsification on either
-would require further revision and would, in turn, be informative
-about which part of the mechanism is wrong. Either outcome is more
-useful than not running the test. This is the natural follow-up to
-the present study and is explicitly out of scope for it.
+The recent-large-response result is the template. It is strongly decodable
+(`+0.62` full-lag MLP gap, `+0.51` at lag `>= 3`) but only weakly causal
+under lag-filtered corruption (`+0.013` dNLL on `sz_k`, `+0.003` after
+`sz_k`). A future locked experiment should predict all three quantities in
+advance, preferably on a new domain such as TCP traces or program-execution
+logs. The key question is no longer merely "is the feature decodable?" but
+"when does residual recoverability become model-side use?"
 
 ### 9.5 What the cities case does and does not show
 
@@ -1783,8 +1767,8 @@ only that the residual streams of these specific small models on
 these specific tasks contain linearly recoverable representations
 of specific features, that we have tested those representations
 with reasonable rigor, and that the pattern across domains is
-consistent with the graded N-criterion subject to the limitations
-in §8.
+best summarized as architectural carry-through plus a concrete probe
+confound, not as a general N-criterion theory.
 
 ---
 
@@ -1792,16 +1776,15 @@ in §8.
 
 We tested the hypothesis that small next-token transformers
 spontaneously represent features that are predictively relevant
-to their training objective, across five domains uniformly, with
-a sixth domain (maze navigation) ex-ante pre-registered. We
+to their training objective, across five descriptive domains and two
+ex-ante pre-registered domains. We
 found:
 
 - The strict biconditional form of the hypothesis is **falsified**
   by the pre-registered maze starting-cell experiment.
-- A graded form — predictive relevance is the dominant driver of
-  what is linearly recoverable from the residual stream — survives
-  with substantial qualifications, and is the version of the
-  claim we adopt going forward.
+- The graded form's broader null direction is also falsified by HTTP
+  Feature B. What survives is the narrower architectural carry-through
+  mechanism, not a strong predictive theory of representational content.
 - Across positive controls (Othello, music voice-leading, music
   chord), the multi-seed probe + transplant + per-layer protocol
   reproduces and tightens prior literature results.
@@ -1809,13 +1792,12 @@ found:
   cell), the picture is mixed: beat behaves as predicted (null in
   both probe and transplant); starting-cell falsifies the
   prediction.
-- A narrower architectural carry-through claim has additional
-  support from HTTP follow-ups: same-request path and previous-
-  request path are both recoverable at the current request's size
-  token, including across a repeated-record boundary. Interventions
-  show this is residual persistence of recent structured context,
-  not proof that every carried feature is currently useful for
-  next-token prediction.
+- A narrower architectural carry-through claim has additional support from
+  HTTP follow-ups: same-request path, previous-request path, and the path
+  of the most recent earlier large response are recoverable at the current
+  request's size token. Interventions show this is residual persistence of
+  recent structured context, not proof that every carried feature is
+  currently useful for next-token prediction.
 - Domains differ in how the encoding is constructed: Othello
   builds it across depth, music computes it sharply at L0→L1,
   cities pre-encodes it at the embedding table from token co-
@@ -1826,9 +1808,10 @@ found:
 The methodological contribution we believe matters most is the
 combination of multi-seed reporting, probe + transplant
 convergence, per-layer ablation, destroyed-structure controls, and
-pre-registration with a git audit trail. We hope this combination
-becomes a reasonable bar for the small-model branch of the
-mechanistic-interpretability literature.
+pre-registration with a git audit trail, plus position-controlled probing
+for position-correlated targets. We hope this combination becomes a
+reasonable bar for the small-model branch of the mechanistic-
+interpretability literature.
 
 ---
 
@@ -1849,16 +1832,19 @@ referenced in text:)
 
 All code, data preparation pipelines, training configurations,
 probe/transplant scripts, multi-seed runners, and the
-pre-registered predictions file are publicly versioned at the
+pre-registered predictions files are publicly versioned at the
 project repository. Each headline number reported in this paper
 can be reproduced end-to-end on a laptop with Apple MPS in under
 8 hours; the larger-scale conditions discussed in §8.1 require GPU
 rental.
 
 The pre-registration audit trail is verifiable via
-`git log --diff-filter=A predictions/predictions_maze_navigation.md`,
-which shows the commit hash `aa025b1` predating any maze model
-training, data generation, or probe run.
+`git log --diff-filter=A predictions/predictions_maze_navigation.md`
+and `git log --diff-filter=A predictions/predictions_http_log_sequences.md`,
+which show commits `aa025b1` and `3b25ed3` predating the corresponding
+maze and HTTP runs. The three HTTP carry-through follow-ups are similarly
+auditable via their prediction files at commits `88155b4`, `0d115c2`, and
+`8d671ca`.
 
 ## Appendix B: Per-domain configurations
 

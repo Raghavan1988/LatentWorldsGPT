@@ -153,3 +153,18 @@ It is not required for:
 
 Pre-registration applies when we are testing the N-criterion framework
 against a new case where the answer is not yet known.
+
+## Current locked follow-ups
+
+The original two pre-registered domains are maze navigation and HTTP log
+sequences. After those results, three narrower HTTP carry-through follow-ups
+were also locked before running:
+
+| File | Locked commit | Result summary |
+|---|---|---|
+| `predictions_http_same_request_path_carrythrough.md` | `88155b4` | Confirmed; best MLP gap `+0.809`. |
+| `predictions_http_previous_request_path_carrythrough.md` | `0d115c2` | Confirmed; best MLP gap `+0.674`. |
+| `predictions_http_recent_large_response_path_carrythrough.md` | `8d671ca` | Confirmed; best MLP gap `+0.621` full lag and `+0.514` with lag `>= 3`. |
+
+These follow-ups are not new training runs. They use the already-trained HTTP
+checkpoint to test whether carry-through extends beyond first-slot copying.

@@ -1,5 +1,11 @@
 # Plan: Weeks 3–6 (writeup-track refinements)
 
+> **Current status — 2026-07-04.** This plan is historical. The ex-ante maze
+> and HTTP experiments have been run, the broad N-criterion has been weakened,
+> and the current write-up centers on architectural carry-through plus
+> position-correlation diagnostics. See `update_july4.md` for today's
+> follow-up results and current next-step direction.
+
 After the Phase 1+Phase 2 rigor pass (multi-seed probes, multi-seed transplants,
 per-layer transplant ablation, linear-vs-MLP, symgroup methodology
 resolution), the remaining work is structured around six themes:

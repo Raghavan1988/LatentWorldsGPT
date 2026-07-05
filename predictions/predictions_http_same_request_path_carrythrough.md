@@ -141,8 +141,13 @@ It does **not** show that the model can find an arbitrary earlier slot by
 content. It only shows that repeated-layout, non-first, non-absolute-position
 features can persist across a short attention route.
 
-This is a sanity check for the next two follow-ups.
+At lock time, this was a sanity check for the next two follow-ups; those
+follow-ups have now been run and are summarized in `predictions/README.md`.
 
 ## Amendments (post-lockdown)
 
-[empty until first amendment]
+- 2026-07-04: Confirmed. Five-seed class-balanced probe at `sz_k` recovered
+  same-request `p_k` with best linear gap `+0.787` at L2 and best MLP gap
+  `+0.809` at L2. Paired corruption showed `p_k` is strongly useful for
+  predicting `sz_k` (natural dNLL `+4.029`) but only weakly useful after the
+  size token (natural dNLL `+0.083`).

@@ -6,7 +6,7 @@ is self-contained and references the corresponding paper sections.
 | # | File | Format | What it shows |
 |---|---|---|---|
 | 1 | [`01_experimental_arc.md`](01_experimental_arc.md) | Mermaid (renders on GitHub) | The pre-register → falsify → revise → re-test timeline with commit hashes and gap numbers inline |
-| 2 | [`02_results_matrix.md`](02_results_matrix.md) | Markdown heatmap | Cross-domain × feature × condition outcome matrix with color-coded verdicts |
+| 2 | [`02_results_matrix.md`](02_results_matrix.md) | Markdown heatmap | Cross-domain × feature × condition outcome matrix with color-coded verdicts, including July 4 HTTP carry-through follow-ups |
 | 3 | [`03_per_layer_ablation.png`](03_per_layer_ablation.png) | PNG (matplotlib) | Where each (domain, feature) representation lives across transformer depth |
 | 4 | [`04_cross_condition_gradient.png`](04_cross_condition_gradient.png) | PNG (matplotlib) | Real / within-shuffled / global-shuffled gap comparison; shows where the monotonicity prediction holds and where it does not |
 

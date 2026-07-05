@@ -1,10 +1,4 @@
-# CLAUDE.md
-
-> **Current status — 2026-07-04.** This operational guide still contains the
-> May build history, but the current scientific framing is in
-> `update_july4.md`, `paper_draft.md`, and `report.md`. The repo now centers
-> on pre-registered failures of the broad N-criterion, a narrower
-> architectural carry-through mechanism, and position-correlation controls.
+# AGENTS.md
 
 Operational guide for working in this repo. Read `CONTEXT.md` for the scientific
 framing and `PLAN.md` for the phased build plan. The current project framing
@@ -13,9 +7,9 @@ framing and `PLAN.md` for the phased build plan. The current project framing
 ## What this is (one line)
 
 A comparative study of where Othello-GPT-style emergent world representations
-appear in next-token transformers, now reframed around pre-registration:
-the broad N-criterion failed, architectural carry-through survived as the
-narrow mechanism, and HTTP follow-ups test how far that carry-through extends.
+appear in next-token transformers, with cities as the first studied domain and
+a portfolio of additional domains (symmetric-group, music, dialog, flight-phase,
+maze) to map the conditions under which the result reproduces.
 
 The cities domain is now a **decomposition** anchor: within the same domain we
 have a model that learned the graph (real London, 99.7% valid-edge), a model

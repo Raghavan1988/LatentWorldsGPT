@@ -31,6 +31,12 @@ side effect of self-attention copying. Carry-through was introduced
 after the maze falsification and independently confirmed by the HTTP
 first-request prediction (+0.17 gap), making it the single substantive
 ex-ante claim the framework passed on two domains of different shape.
+Three post-lock HTTP follow-ups further show the effect is not confined
+to first slots: same-request path is recoverable at the size token
+(+0.81 MLP gap), previous-request path is recoverable across a record
+boundary (+0.67), and the path of the most recent earlier large response
+remains recoverable even when the source event is content-selected
+(+0.62 full lag; +0.51 with lag >= 3).
 
 The HTTP Feature B result also surfaces a methodological failure mode
 that probe-based work should control for: target features correlated
@@ -751,6 +757,25 @@ being absent.
 
 The position-correlation issue is a methodological contribution (§4.10).
 
+#### Post-lock carry-through follow-ups
+
+After the original HTTP result, we locked three narrower follow-up
+predictions to test whether carry-through was only first-slot copying.
+All three reuse the trained HTTP checkpoint and probe at the current
+request's size token `sz_k`.
+
+| Follow-up | Source feature | Best MLP gap | Intervention reading |
+|---|---|---:|---|
+| Same-request path | `p_k` | **+0.809** | Strongly useful for predicting `sz_k`; weak after `sz_k`. |
+| Previous-request path | `p_{k-1}` | **+0.674** | Modestly useful for predicting `sz_k`; tiny after `sz_k`. |
+| Recent-large-response path | most recent earlier `p_j` with `size_bin_j >= 5` | **+0.621** full lag; **+0.514** for lag `>= 3` | Strongly decodable, but weakly useful under lag-filtered corruption. |
+
+The third test is the useful LessWrong result: the source event is not a
+first slot and not a fixed relative offset; it is selected by content.
+The probe result is strong, but the intervention result is cautious. This
+is evidence for residual persistence of structured recent context, not
+proof of a robust semantic memory circuit.
+
 ### 5.9 Joint reading of the two pre-registered tests
 
 | Pre-registered claim | Maze | HTTP |
@@ -759,9 +784,12 @@ The position-correlation issue is a methodological contribution (§4.10).
 | Null on computed irrelevant feature | n/a | ✗ falsified (even at fixed position) |
 | Specific positive (predictively-relevant) | ✗ falsified (distance) | n/a |
 
-**Carry-through: 2-for-2.** Confirmed when introduced as the
-explanatory mechanism for the maze result, and again as a forward-looking
-prediction on a different domain shape (HTTP).
+**Carry-through: 2-for-2 on the original pre-registered tests, with three
+HTTP follow-up confirmations.** Confirmed when introduced as the explanatory
+mechanism for the maze result, again as a forward-looking prediction on a
+different domain shape (HTTP Feature A), and then in a ladder of HTTP
+follow-ups that moves from local fixed-offset copying to content-selected
+earlier-event recoverability.
 
 **Broader "predictive relevance drives encoding": 0-for-3 on risky
 predictions.** Maze distance was predicted encoded but is not. HTTP
@@ -1038,8 +1066,10 @@ default-on rather than opt-in.
 The carry-through mechanism as currently stated is a high-level claim
 about self-attention behavior. A natural follow-up is to localize the
 relevant attention heads, characterize the copying pattern across layers,
-and verify that ablating those heads collapses the encoding. The maze
-and HTTP models studied here are small enough that head-level
+and verify that ablating those heads collapses the encoding. The HTTP
+recent-large-response case is the most interesting target because it is
+strongly decodable but only weakly causal under lag-filtered corruption.
+The maze and HTTP models studied here are small enough that head-level
 decomposition is tractable.
 
 ### 9.4 Scaling
@@ -1064,7 +1094,8 @@ does not survive its own pre-registered tests. The mechanism that does
 survive, carry-through, is a simple architectural side effect of
 self-attention. Its empirical weight comes not from novelty but from
 having been written down before the second pre-registered domain was
-trained and then confirmed at the predicted magnitude. We treat this
+trained and then confirmed at the predicted magnitude, then stress-tested
+by three locked HTTP follow-ups beyond first-slot copying. We treat this
 not as a victory for the framework but as a demonstration of what
 pre-registered, audit-trailed work makes possible: even an
 obvious-in-hindsight claim earns scientific status only when its
@@ -1133,8 +1164,9 @@ corresponding domain.
 Inlined: contents of `predictions/predictions_maze_navigation.md`
 (locked at commit `aa025b1`) and
 `predictions/predictions_http_log_sequences.md` (locked at commit
-`3b25ed3`). See repository for the `git log --diff-filter=A` audit
-verification.
+`3b25ed3`). The three HTTP carry-through follow-up prediction files
+(`88155b4`, `0d115c2`, `8d671ca`) are referenced rather than inlined.
+See repository for the `git log --diff-filter=A` audit verification.
 
 ## Appendix D: Full multi-seed result tables
 

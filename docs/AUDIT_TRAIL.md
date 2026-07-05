@@ -10,12 +10,18 @@ result tables remain in `predictions/` and the `results_*.md` files.
 |---|---|---|---|---|
 | Maze navigation | `predictions/predictions_maze_navigation.md` | `aa025b1` | 2026-05-27 | `results_maze_navigation.md` |
 | HTTP log sequences | `predictions/predictions_http_log_sequences.md` | `3b25ed3` | 2026-05-31 | `results_http_log_sequences.md` |
+| HTTP same-request path follow-up | `predictions/predictions_http_same_request_path_carrythrough.md` | `88155b4` | 2026-07-04 | `results_http_log_sequences.md` |
+| HTTP previous-request path follow-up | `predictions/predictions_http_previous_request_path_carrythrough.md` | `0d115c2` | 2026-07-04 | `results_http_log_sequences.md` |
+| HTTP recent-large-response path follow-up | `predictions/predictions_http_recent_large_response_path_carrythrough.md` | `8d671ca` | 2026-07-04 | `results_http_log_sequences.md` |
 
 Verify locally:
 
 ```bash
 git log --diff-filter=A predictions/predictions_maze_navigation.md
 git log --diff-filter=A predictions/predictions_http_log_sequences.md
+git log --diff-filter=A predictions/predictions_http_same_request_path_carrythrough.md
+git log --diff-filter=A predictions/predictions_http_previous_request_path_carrythrough.md
+git log --diff-filter=A predictions/predictions_http_recent_large_response_path_carrythrough.md
 ```
 
 ## Maze Navigation
@@ -73,3 +79,15 @@ Interpretation:
 - The position-control diagnostics were post-hoc and should be
   pre-registered in future experiments where target labels correlate with
   token position.
+
+## HTTP Carry-Through Follow-Ups
+
+The July 4 follow-ups tested whether carry-through extends beyond fixed
+first-request slots. All three were locked before their corresponding evals
+were run.
+
+| Follow-up | Probe target | Headline probe | Intervention reading |
+|---|---|---:|---|
+| Same-request path | recover `p_k` at `sz_k` | MLP gap `+0.809` | Strongly useful for predicting `sz_k`; weak after `sz_k`. |
+| Previous-request path | recover `p_{k-1}` at `sz_k` | MLP gap `+0.674` | Modestly useful for predicting `sz_k`; tiny after `sz_k`. |
+| Recent-large-response path | recover most recent earlier large-response `p_j` at `sz_k` | MLP gap `+0.621`; lag `>= 3` gap `+0.514` | Strongly decodable but weakly useful under lag-filtered corruption. |

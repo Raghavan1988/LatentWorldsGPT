@@ -153,4 +153,8 @@ If null while same-request path is positive, the claim should be weakened:
 
 ## Amendments (post-lockdown)
 
-[empty until first amendment]
+- 2026-07-04: Confirmed. Five-seed class-balanced probe at `sz_k` recovered
+  previous-request `p_{k-1}` with best linear gap `+0.535` at L2 and best MLP
+  gap `+0.674` at L2. Paired corruption showed modest usefulness for
+  predicting `sz_k` (natural dNLL `+0.187`) and very small usefulness after
+  `sz_k` (natural dNLL `+0.024`).

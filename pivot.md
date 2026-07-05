@@ -1,5 +1,13 @@
 # Pivot plan — from LatentCityGPT to a comparative study of where Othello-GPT extends
 
+> **Status update — 2026-07-04 (current).** This pivot plan is historical.
+> The current interpretation is no longer the original D/N/¬L framing. The
+> broad N-criterion failed on the maze and HTTP pre-registered tests; the
+> surviving claim is architectural carry-through plus a position-correlation
+> probe-confound lesson. The July 4 HTTP follow-ups show carry-through beyond
+> first slots: same-request path, previous-request path, and content-selected
+> recent-large-response path are all recoverable. See `update_july4.md`.
+
 **Status:** Proposed 2026-05-24; updated 2026-05-24 evening with empirical
 results from the must-do experiments. Supersedes the single-domain framing
 in `CONTEXT.md` and `PLAN.md` but does not replace any code. Read alongside
@@ -8,7 +16,7 @@ data-pipeline-level results; see the new section "Empirical results from
 the must-do experiments" below for the causal-intervention results that
 strengthen the pivot.
 
-> **Status update — 2026-05-27 (most recent).** The "rigor pass" is
+> **Status update — 2026-05-27 (then-current).** The "rigor pass" is
 > underway and has changed both the headline numbers and the framing.
 > See `update_phase1.md` and `update_phase2.md` for full detail.
 > Headlines:

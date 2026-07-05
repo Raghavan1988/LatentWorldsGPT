@@ -44,17 +44,25 @@ Color shows the observed outcome.
 
 | Feature | Real | Within-shuffled | Global-shuffled | Verdict |
 |---|:---:|:---:|:---:|---|
-| Feature A: first request size_bin **(pos via carry-through)** | 🟩 +0.17 | 🟨 +0.13 | 🟩 +0.16 | confirmed; **carry-through 2-for-2** |
+| Feature A: first request size_bin **(pos via carry-through)** | 🟩 +0.17 | 🟨 +0.13 | 🟩 +0.16 | confirmed; original HTTP carry-through prediction |
 | Feature B: cumulative large count **(NULL, computed)** | 🟥 +0.29 | 🟥 +0.24 | 🟥 +0.30 | **falsified** (initial) |
 | Position control (purely positional) | 🟩 +0.43 | 🟩 +0.54 | 🟩 +0.40 | confirms position is recoverable |
 | Feature B at fixed k=5 (Design A) **(NULL after control)** | 🟥 +0.22 | 🟥 +0.20 | 🟥 +0.14 | **falsified** (after position control) |
 | Feature B residual probe (Design B3) **(NULL after control)** | 🟥 +0.47 R² | 🟥 +0.43 R² | 🟥 +0.22 R² | **falsified** (after position control) |
 
+### HTTP carry-through follow-ups (locked before eval, July 4)
+
+| Feature | Real | Lag-filtered | Verdict |
+|---|:---:|:---:|---|
+| Same-request path `p_k` at `sz_k` | 🟩 +0.81 | ⬛ | confirmed; local repeated-layout carry-through |
+| Previous-request path `p_{k-1}` at `sz_k` | 🟩 +0.67 | ⬛ | confirmed; cross-record fixed-offset carry-through |
+| Recent-large-response path `p_j` at `sz_k` | 🟩 +0.62 | 🟩 +0.51 for lag `>= 3` | confirmed; content-selected earlier-event recoverability |
+
 ## C. Summary scorecard
 
 | Claim | Score |
 |---|---|
-| Carry-through positive direction | 🟩🟩 **2-for-2** (maze starting cell + HTTP Feature A) |
+| Carry-through positive direction | 🟩🟩 **2-for-2** on original pre-registered domains, plus 3 HTTP follow-up confirmations |
 | Strict null direction | 🟥🟥 **0-for-2** (maze starting cell + HTTP Feature B) |
 | Specific positive direction prediction | 🟥 **0-for-1** (maze distance) |
 | Destroyed-structure monotonicity (real > within > global) | 🟨 **mixed** (works on some, fails on cities/maze starting cell) |
@@ -63,12 +71,18 @@ Color shows the observed outcome.
 ## D. The single most important pattern
 
 The architectural carry-through mechanism is the one claim that survived
-pre-registered testing on two different domain shapes:
+pre-registered testing on two different domain shapes. The July 4 HTTP
+follow-ups add a narrower ladder beyond first-slot copying:
 
 | Test | Carry-through prediction | Observed |
 |---|---|---|
 | Maze starting cell (commit aa025b1) | encoded by carry-through (introduced post-falsification) | encoded (gap +0.15) |
 | HTTP Feature A (commit 3b25ed3) | encoded by carry-through (ex-ante prediction) | encoded (gap +0.17) |
+| HTTP same-request path (commit 88155b4) | repeated-layout local carry-through | encoded (gap +0.81) |
+| HTTP previous-request path (commit 0d115c2) | cross-record fixed-offset carry-through | encoded (gap +0.67) |
+| HTTP recent-large-response path (commit 8d671ca) | content-selected earlier-event recoverability | encoded (gap +0.62; lag `>= 3` gap +0.51) |
 
 Two domains. Two different shapes (synthetic spatial graph vs applied
-event stream). Same mechanism. Both confirmed at predicted magnitudes.
+event stream). Same mechanism. The follow-ups suggest the mechanism is not
+only first-slot copying, while interventions keep the interpretation modest:
+strong recoverability does not always mean strong immediate next-token use.

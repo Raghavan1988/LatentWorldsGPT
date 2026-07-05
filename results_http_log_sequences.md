@@ -326,11 +326,10 @@ specific case but plausibly not the only one; any feature correlated
 with another predictively-relevant feature inherits some of its
 encoding.
 
-This refines the framework but does not destroy it: carry-through is
-still real (Prediction 1 confirms cleanly), the destroyed-structure
-controls behave as predicted on the carry-through side, and the
-positive direction of the framework (predictively-required features
-ARE encoded) remains unchallenged.
+This weakens the framework substantially. Carry-through is still real
+(Prediction 1 confirms cleanly, and the July 4 follow-ups extend it beyond
+first slots), but the null-on-irrelevant/computed-feature direction should
+not be treated as a surviving predictive theory.
 
 ## Comparison to the maze experiment
 
@@ -341,7 +340,7 @@ ARE encoded) remains unchallenged.
 | Tokenization | One token per cell | Four tokens per request |
 | Carry-through prediction | Starting-cell encoded (FALSIFIED — encoded but predicted null) | Feature A encoded (CONFIRMED — predicted encoded) |
 | Computed-feature prediction | Distance encoded (FALSIFIED — predicted encoded, was null) | Feature B null (FALSIFIED — predicted null, was encoded) |
-| What was learned | Strict iff is wrong; need to add carry-through mechanism | Carry-through generalizes; need to weaken null claim further (correlated-feature inheritance) |
+| What was learned | Strict iff is wrong; need to add carry-through mechanism | Carry-through generalizes; the broader null claim fails even after position controls |
 
 Both experiments deliver framework-modifying information. The maze
 data forced the addition of carry-through. The HTTP data forces an
@@ -373,3 +372,46 @@ to the framework's strength than originally hoped.
 - The position-control probe, fixed-position Feature B probe, and
   residual-after-position probe were all post-hoc follow-ups prompted
   by the Feature B ambiguity.
+- Three narrower carry-through follow-ups were locked and then run after
+  the original HTTP result: same-request path (`88155b4`), previous-request
+  path (`0d115c2`), and recent-large-response path (`8d671ca`).
+
+## July 4 carry-through follow-ups
+
+These follow-ups use the existing HTTP checkpoint and do not introduce new
+training runs. All probes are at the current request's `size_bin` token
+`sz_k`.
+
+| Follow-up | Source feature | Best linear gap | Best MLP gap | Verdict |
+|---|---|---:|---:|---|
+| Same-request path | `p_k` | `+0.787` at L2 | `+0.809` at L2 | Confirmed |
+| Previous-request path | `p_{k-1}` | `+0.535` at L2 | `+0.674` at L2 | Confirmed |
+| Recent-large-response path, lag `>= 1` | `p_j` where `j < k` and `size_bin_j >= 5` | `+0.558` at L3 | `+0.621` at L2 | Strongly confirmed |
+| Recent-large-response path, lag `>= 3` | same target, stricter lag | `+0.460` at L3 | `+0.514` at L2 | Confirmed |
+
+The ordering matches the qualitative prediction:
+
+```text
+same-request path > previous-request path > recent-large-response path
+```
+
+The paired corruption interventions qualify the probe interpretation:
+
+| Follow-up | Sample | Target | ΔNLL corrupted-clean | Accuracy change |
+|---|---|---|---:|---:|
+| Same-request path | Natural 50k | predict `sz_k` | `+4.029` | `-0.415` |
+| Same-request path | Natural 50k | predict token after `sz_k` | `+0.083` | `-0.006` |
+| Previous-request path | Natural 50k | predict `sz_k` | `+0.187` | `-0.075` |
+| Previous-request path | Natural 50k | predict token after `sz_k` | `+0.024` | `-0.004` |
+| Recent-large path, lag `>= 1` | Natural 50k | predict `sz_k` | `+0.084` | `-0.032` |
+| Recent-large path, lag `>= 1` | Natural 50k | predict token after `sz_k` | `+0.009` | `-0.000` |
+| Recent-large path, lag `>= 3` | Natural 50k | predict `sz_k` | `+0.013` | `-0.000` |
+| Recent-large path, lag `>= 3` | Natural 50k | predict token after `sz_k` | `+0.003` | `-0.001` |
+
+Interpretation: the residual stream preserves recent structured context more
+strongly than the immediate next-token objective seems to require. The
+recent-large-response path result is especially useful for the LessWrong
+post because it is content-selected rather than first-slot or fixed-offset
+copying. But the lag-filtered intervention effect is tiny, so the result
+should be framed as strong residual recoverability, not as proof of a robust
+semantic memory circuit.

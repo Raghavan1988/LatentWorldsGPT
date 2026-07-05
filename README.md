@@ -3,7 +3,10 @@
 Pre-registered study of emergent representations in small next-token
 transformers. Seven domains. One ex-ante-validated mechanism (architectural
 carry-through). One identified probe confound (position-correlation) with
-two controllable diagnostics.
+two controllable diagnostics. July 4 follow-ups show the HTTP carry-through
+story is not limited to first slots: same-request path, previous-request path,
+and the path of the most recent earlier large response are all recoverable at
+the current request's size token.
 
 The paper is at [`paper_draft.md`](paper_draft.md). The longer working draft
 is at [`report.md`](report.md). Visual companions are in
@@ -21,10 +24,11 @@ was collected or any model was trained, with the commit hashes
 verifiable from `git log --diff-filter=A` on the predictions files. Both
 pre-registered experiments falsify the strict form of the N-criterion.
 One mechanism survives ex-ante testing on both domains (architectural
-carry-through of features at positionally distinct input slots). One
-methodological failure mode is identified (position-correlation as a
-probe confound) with two controllable diagnostics that future
-probe-based work should adopt by default.
+carry-through of features at positionally distinct input slots), and
+three locked HTTP follow-ups show the same mechanism is not limited to
+first-slot copying. One methodological failure mode is identified
+(position-correlation as a probe confound) with two controllable
+diagnostics that future probe-based work should adopt by default.
 
 ## Seven domains
 
@@ -155,6 +159,7 @@ prediction files.
 | [`predictions/`](predictions/) | Locked ex-ante predictions for maze and HTTP; template and example |
 | [`results_maze_navigation.md`](results_maze_navigation.md) | Confirm/falsify result tables for the maze experiment |
 | [`results_http_log_sequences.md`](results_http_log_sequences.md) | Confirm/falsify result tables for the HTTP experiment |
+| [`update_july4.md`](update_july4.md) | July 4 HTTP carry-through follow-up log and LessWrong story |
 | [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md) | Canonical commands and expected artifacts for the pre-registered maze/HTTP runs |
 | [`docs/AUDIT_TRAIL.md`](docs/AUDIT_TRAIL.md) | Commit-level audit trail for locked predictions and post-hoc follow-ups |
 | [`figures/`](figures/) | Four visual companions; see Figures section above |

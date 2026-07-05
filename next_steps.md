@@ -1,5 +1,11 @@
 # Next steps — concrete plan from here
 
+> **Current status — 2026-07-04.** This file is an old May planning snapshot.
+> It is useful history for the cities pivot, but not the current next-step
+> list. The current next useful experiment is causal/mechanistic: explain when
+> strong residual recoverability becomes model-side use, using the July 4
+> HTTP recent-large-response result as the template. See `update_july4.md`.
+
 Working document for what to do next. Captures the experimental plan implied by
 the session-end state in `update_may24_final.md` and the reframed Othello-GPT
 status in `STATUS_vs_OTHELLO-GPT.md`.

@@ -1,6 +1,13 @@
 # PLAN.md — build plan after the 2026-05-24 pivot
 
-> **Status update — 2026-05-27 (most recent).** Flight-phase
+> **Status update — 2026-07-04 (current).** The May build plan is now
+> historical. The project has moved through maze and HTTP pre-registration,
+> with the broad N-criterion falsified and the narrower architectural
+> carry-through mechanism supported by HTTP follow-ups. See `update_july4.md`
+> for today's work and `paper_draft.md` / `report.md` for the current
+> write-up state.
+
+> **Status update — 2026-05-27 (then-current).** Flight-phase
 > Milestone 4 landed (`updateMay27.md`). Applied positive control:
 > real ADS-B trajectories from `traffic` library, tokenized as discretized
 > (alt, vr, speed) bin-tuples, trained on 3-condition gradient.
@@ -445,4 +452,3 @@ results to publication-ready rigor:
 
 The full rigor-pass plan is at `plan_phases_3_6.md`. Phase 1 and 2
 writeups are at `update_phase1.md` and `update_phase2.md`.
-
