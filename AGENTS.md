@@ -1,8 +1,9 @@
 # AGENTS.md
 
-Operational guide for working in this repo. Read `CONTEXT.md` for the scientific
-framing and `PLAN.md` for the phased build plan. The current project framing
-(after the 2026-05-24 pivot) is in `pivot.md`.
+Operational guide for working in this repo. Read
+`docs/planning/CONTEXT.md` for the scientific framing and
+`docs/planning/PLAN.md` for the phased build plan. The current project
+framing (after the 2026-05-24 pivot) is in `docs/planning/pivot.md`.
 
 ## What this is (one line)
 

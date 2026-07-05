@@ -2,13 +2,15 @@
 
 > **Current status — 2026-07-04.** This operational guide still contains the
 > May build history, but the current scientific framing is in
-> `update_july4.md`, `paper_draft.md`, and `report.md`. The repo now centers
+> `docs/history/update_july4.md`, `docs/paper/paper_draft.md`, and
+> `docs/paper/report.md`. The repo now centers
 > on pre-registered failures of the broad N-criterion, a narrower
 > architectural carry-through mechanism, and position-correlation controls.
 
-Operational guide for working in this repo. Read `CONTEXT.md` for the scientific
-framing and `PLAN.md` for the phased build plan. The current project framing
-(after the 2026-05-24 pivot) is in `pivot.md`.
+Operational guide for working in this repo. Read
+`docs/planning/CONTEXT.md` for the scientific framing and
+`docs/planning/PLAN.md` for the phased build plan. The current project
+framing (after the 2026-05-24 pivot) is in `docs/planning/pivot.md`.
 
 ## What this is (one line)
 

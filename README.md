@@ -8,9 +8,10 @@ story is not limited to first slots: same-request path, previous-request path,
 and the path of the most recent earlier large response are all recoverable at
 the current request's size token.
 
-The paper is at [`paper_draft.md`](paper_draft.md). The longer working draft
-is at [`report.md`](report.md). Visual companions are in
-[`figures/`](figures/).
+The paper is at [`docs/paper/paper_draft.md`](docs/paper/paper_draft.md).
+The longer working draft is at [`docs/paper/report.md`](docs/paper/report.md).
+Visual companions are in [`figures/`](figures/). The reorganized document
+index is at [`docs/README.md`](docs/README.md).
 
 ## What this is in one paragraph
 
@@ -154,18 +155,20 @@ prediction files.
 
 | File | What |
 |---|---|
-| [`paper_draft.md`](paper_draft.md) | Tight version of the paper (about 12 pages excluding references) |
-| [`report.md`](report.md) | Longer working draft in original prose |
+| [`paper_draft.md`](docs/paper/paper_draft.md) | Tight version of the paper (about 12 pages excluding references) |
+| [`report.md`](docs/paper/report.md) | Longer working draft in original prose |
 | [`predictions/`](predictions/) | Locked ex-ante predictions for maze and HTTP; template and example |
-| [`results_maze_navigation.md`](results_maze_navigation.md) | Confirm/falsify result tables for the maze experiment |
-| [`results_http_log_sequences.md`](results_http_log_sequences.md) | Confirm/falsify result tables for the HTTP experiment |
-| [`update_july4.md`](update_july4.md) | July 4 HTTP carry-through follow-up log and LessWrong story |
-| [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md) | Canonical commands and expected artifacts for the pre-registered maze/HTTP runs |
+| [`results_maze_navigation.md`](docs/results/results_maze_navigation.md) | Confirm/falsify result tables for the maze experiment |
+| [`results_http_log_sequences.md`](docs/results/results_http_log_sequences.md) | Confirm/falsify result tables for the HTTP experiment |
+| [`results_maze_c3_carrythrough.md`](docs/results/results_maze_c3_carrythrough.md) | C3 follow-up result showing the maze non-first-slot prediction did not confirm |
+| [`update_july4.md`](docs/history/update_july4.md) | July 4 HTTP carry-through follow-up log and LessWrong story |
+| [`docs/lesswrong/`](docs/lesswrong/) | LessWrong-oriented drafts and source material |
+| [`REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md) | Canonical commands and expected artifacts for the pre-registered maze/HTTP runs |
 | [`docs/AUDIT_TRAIL.md`](docs/AUDIT_TRAIL.md) | Commit-level audit trail for locked predictions and post-hoc follow-ups |
 | [`figures/`](figures/) | Four visual companions; see Figures section above |
 | [`CLAUDE.md`](CLAUDE.md) | Operational guide for development; per-domain conventions and commands |
-| [`CONTEXT.md`](CONTEXT.md) | Scientific framing of the project |
-| [`PLAN.md`](PLAN.md) | Phased build plan; status by phase |
+| [`CONTEXT.md`](docs/planning/CONTEXT.md) | Scientific framing of the project |
+| [`PLAN.md`](docs/planning/PLAN.md) | Phased build plan; status by phase |
 
 ## Cities sub-project context
 
@@ -181,7 +184,8 @@ paper, intentionally downplayed because most of the cities encoding
 lives in the embedding table rather than in the transformer's
 computation.
 
-History is preserved in `pivot.md` and `update_may24_final.md`. The
+History is preserved in [`docs/planning/pivot.md`](docs/planning/pivot.md)
+and [`docs/history/update_may24_final.md`](docs/history/update_may24_final.md). The
 cities-specific THE ONE RULE (no coordinate, distance, or direction in
 input tokens) generalizes per-domain to "no probe-target value may
 appear in the model's input."
