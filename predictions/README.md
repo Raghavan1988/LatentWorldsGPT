@@ -6,8 +6,10 @@ observed results after the experiment completes.
 
 ## Why this exists
 
-The N-criterion framework (see `pivot.md`, `CONTEXT.md`,
-`STATUS_vs_OTHELLO-GPT.md`) makes claims about *when* a next-token
+The N-criterion framework (see [`pivot.md`](../docs/planning/pivot.md),
+[`CONTEXT.md`](../docs/planning/CONTEXT.md), and
+[`STATUS_vs_OTHELLO-GPT.md`](../docs/planning/STATUS_vs_OTHELLO-GPT.md))
+makes claims about *when* a next-token
 transformer will encode a candidate world feature in its residual
 stream: it will encode F iff next-token prediction requires F.
 
@@ -83,7 +85,8 @@ before the predictions file is committed.
 
 ### Step 5 — compare and record
 
-Write a `results_<tag>.md` file alongside the predictions file. For
+Write a `results_<tag>.md` file under [`docs/results/`](../docs/results/).
+For
 each prediction:
 
 | Prediction | Observed value | Verdict |
@@ -120,11 +123,12 @@ honestly.
 
 For each falsified prediction:
 
-1. Record the failure verbatim in `results_<tag>.md`.
+1. Record the failure verbatim in `docs/results/results_<tag>.md`.
 2. Write a short post-hoc analysis: why might the framework have
    been wrong here? Was the N-criterion analysis flawed? Was there
    a hidden encoding mechanism we didn't consider?
-3. Update `pivot.md` or `CONTEXT.md` if the framework needs
+3. Update [`pivot.md`](../docs/planning/pivot.md) or
+   [`CONTEXT.md`](../docs/planning/CONTEXT.md) if the framework needs
    refinement based on the failure.
 4. Do not delete or rewrite the original prediction.
 

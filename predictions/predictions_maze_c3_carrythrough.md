@@ -233,4 +233,4 @@ If null, the LessWrong post should not hide it. The correct update would be:
   landing in the pre-registered ambiguous band rather than the confirmation
   band. The stricter `t >= 13` late-only subset produced best MLP gap
   `+0.0322` and best linear gap `+0.0262`, below the ambiguous band. See
-  `results_maze_c3_carrythrough.md`.
+  [`results_maze_c3_carrythrough.md`](../docs/results/results_maze_c3_carrythrough.md).

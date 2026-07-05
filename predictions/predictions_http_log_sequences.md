@@ -254,7 +254,8 @@ predictions themselves would not change.
 
 ## Amendments (post-lockdown)
 
-- 2026-07-04: Results are recorded in `results_http_log_sequences.md`.
+- 2026-07-04: Results are recorded in
+  [`results_http_log_sequences.md`](../docs/results/results_http_log_sequences.md).
   Feature A confirmed with best-layer MLP gap `+0.168`; Feature B falsified
   with raw gap `+0.291` and position-controlled fixed-`k=5` gap `+0.220`.
   Class-balanced probe sampling was used for Feature A because the first
