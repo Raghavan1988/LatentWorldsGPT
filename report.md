@@ -44,8 +44,12 @@ shape.
 The HTTP cumulative-count falsification also reveals a methodological
 issue: position-in-session correlates strongly with the target
 feature, and the trained model's superior positional representations
-inflate the probe gap. We document this confound and propose a
-position-control follow-up.
+inflate the probe gap. We document this confound and run position-
+control follow-ups. We also run two post-lock HTTP carry-through
+follow-ups showing that carry-through is not limited to first request
+slots: same-request path is strongly recoverable at the request's
+size token, and previous-request path is also recoverable across a
+record boundary.
 
 **Contributions**: (1) a methodological framework for pre-registered
 emergent-representation experiments, including the discovery and
@@ -1260,7 +1264,109 @@ position control, Feature B encoding strength tracks training-corpus
 structure. The encoding is structure-dependent, not just a position
 artifact.
 
-#### 7.2.5 What the HTTP experiment shows
+#### 7.2.5 Post-lock carry-through follow-ups: not just first slots
+
+After the original HTTP experiment, the obvious critique of
+architectural carry-through was that the positive cases were too
+easy: the maze starting cell is the first path token, and HTTP
+Feature A is the first request's `size_bin`. To test whether the
+mechanism extends beyond fixed first slots, we added two post-lock
+follow-up predictions and committed them before running the new
+analyses:
+
+- Same-request path carry-through:
+  `predictions/predictions_http_same_request_path_carrythrough.md`
+  (commit `88155b4`).
+- Previous-request path carry-through:
+  `predictions/predictions_http_previous_request_path_carrythrough.md`
+  (commit `0d115c2`).
+
+These are not new training runs. They use the already-trained HTTP
+model and ask what is recoverable from its residual stream. The HTTP
+record layout is:
+
+    [m_k, p_k, s_k, sz_k]
+
+where `m_k` is method, `p_k` is path category, `s_k` is status bucket,
+and `sz_k` is response-size bin for request `k`.
+
+**Same-request path (`p_k`) at `sz_k`.** The first follow-up probes
+the residual stream at the current request's size token `sz_k` and
+asks whether the same request's path category `p_k` is recoverable.
+This is not a first-request test and not a fixed absolute-position
+test; the source token is two tokens earlier in the repeated request
+record.
+
+Five-seed class-balanced probe result:
+
+| Probe | Best layer | Trained | Untrained | Gap |
+|---|---:|---:|---:|---:|
+| Linear | L2 | 0.965 | 0.178 | **+0.787** |
+| MLP | L2 | 0.993 | 0.184 | **+0.809** |
+
+This confirms the pre-specified threshold (MLP gap ≥ +0.10) by a
+wide margin.
+
+We then ran a paired corruption intervention: replace `p_k` with a
+different observed path token and compare clean vs corrupted
+next-token loss. Corrupting `p_k` strongly hurts prediction of
+`sz_k`, but barely hurts prediction of the token after `sz_k`:
+
+| Sample | Target | ΔNLL corrupted-clean | Accuracy change |
+|---|---|---:|---:|
+| Natural 50k | predict `sz_k` | **+4.029** | -0.415 |
+| Natural 50k | predict token after `sz_k` | +0.083 | -0.006 |
+| Balanced 15k | predict `sz_k` | **+4.062** | -0.474 |
+| Balanced 15k | predict token after `sz_k` | +0.100 | -0.009 |
+
+Interpretation: `p_k` is very useful for predicting the current
+request's size bin, and it remains strongly decodable after that
+prediction point, when its direct next-token usefulness is small.
+This is carry-through after local use, not representation of a
+feature that was useless from the start.
+
+**Previous-request path (`p_{k-1}`) at `sz_k`.** The second follow-up
+probes the residual stream at the current request's size token `sz_k`
+and asks whether the previous request's path category `p_{k-1}` is
+recoverable. This is a stronger test than same-request copying: the
+source token is six tokens back and crosses a repeated-record
+boundary.
+
+Five-seed class-balanced probe result:
+
+| Probe | Best layer | Trained | Untrained | Gap |
+|---|---:|---:|---:|---:|
+| Linear | L2 | 0.689 | 0.154 | **+0.535** |
+| MLP | L2 | 0.832 | 0.158 | **+0.674** |
+
+This also confirms the pre-specified threshold (MLP gap ≥ +0.10).
+
+The paired corruption intervention shows a weaker model-side use
+effect than same-request `p_k`: corrupting `p_{k-1}` mildly hurts
+prediction of `sz_k`, and barely affects the token after `sz_k`:
+
+| Sample | Target | ΔNLL corrupted-clean | Accuracy change |
+|---|---|---:|---:|
+| Natural 50k | predict `sz_k` | +0.187 | -0.075 |
+| Natural 50k | predict token after `sz_k` | +0.024 | -0.004 |
+| Balanced 15k | predict `sz_k` | +0.172 | -0.071 |
+| Balanced 15k | predict token after `sz_k` | +0.028 | -0.003 |
+
+Interpretation: previous-request path is strongly decodable at
+`sz_k`, even though its direct usefulness for predicting `sz_k` is
+modest and its usefulness after `sz_k` is tiny. This is evidence for
+cross-record residual context persistence, not merely first-token
+persistence or local two-token copying.
+
+Together, these follow-ups strengthen the narrow architectural
+carry-through claim while also clarifying its limits. The model does
+not appear to preserve only currently useful variables. It preserves
+recent structured context in the residual stream; some of that context
+was locally useful one token earlier, some is only weakly useful now,
+and some remains decodable after its direct next-token usefulness has
+mostly passed.
+
+#### 7.2.6 What the HTTP experiment shows
 
 Carry-through confirmed independently on an applied domain at a
 different shape (P1 with gap +0.17 over predicted ≥ 0.10 threshold).
@@ -1271,6 +1377,17 @@ but not all of the apparent gap: after controlling for position via
 both Design A (within-position at fixed k=5) and Design B3
 (residual-after-position), Feature B retains a +0.22 trained-vs-
 untrained gap, still well above the pre-registered 0.10 threshold.
+
+The two post-lock carry-through follow-ups in §7.2.5 further show
+that HTTP carry-through is not limited to fixed first-request slots:
+same-request path is recoverable at the size token with MLP gap
++0.81, and previous-request path is recoverable across a record
+boundary with MLP gap +0.67. Interventions qualify the interpretation:
+same-request path is locally useful for predicting size, while
+previous-request path is only modestly useful, and both have little
+direct usefulness after the size token. The result is best described
+as residual persistence of recent structured context, not a claim that
+the model selectively represents only next-token-useful features.
 
 The maze experiment had previously falsified the strict form and
 motivated the addition of carry-through. The HTTP experiment falsifies
@@ -1289,13 +1406,17 @@ ex-ante predictions is uneven:
 | Null on computed irrelevant feature | n/a | ✗ falsified (Feature B encoded with gap +0.29) |
 | Specific positive (predictively-relevant feature encoded) | ✗ falsified (distance to goal NOT encoded) | n/a |
 
-**Carry-through: 2-for-2.** The mechanism predicted correctly when
+**Carry-through: 2-for-2 on the original pre-registered domains, with
+additional HTTP follow-up support.** The mechanism predicted correctly when
 tested in the maze starting-cell case (where it was introduced as
 the explanatory mechanism), and again when tested in the HTTP
 Feature A case (where it was a forward-looking pre-registered
 prediction on a domain not used to develop the mechanism). This is
 the kind of cross-domain ex-ante validation that gives the carry-
-through claim meaningful empirical weight.
+through claim meaningful empirical weight. The later HTTP same-request
+and previous-request path follow-ups (§7.2.5) add narrower support:
+carry-through is not confined to first tokens or fixed absolute
+positions, and can cross a repeated-record boundary.
 
 **The broader "predictive relevance drives encoding" framing: 0-for-3
 on risky predictions.** Sometimes predictively-required features are
@@ -1626,6 +1747,13 @@ found:
   cell), the picture is mixed: beat behaves as predicted (null in
   both probe and transplant); starting-cell falsifies the
   prediction.
+- A narrower architectural carry-through claim has additional
+  support from HTTP follow-ups: same-request path and previous-
+  request path are both recoverable at the current request's size
+  token, including across a repeated-record boundary. Interventions
+  show this is residual persistence of recent structured context,
+  not proof that every carried feature is currently useful for
+  next-token prediction.
 - Domains differ in how the encoding is constructed: Othello
   builds it across depth, music computes it sharply at L0→L1,
   cities pre-encodes it at the embedding table from token co-
