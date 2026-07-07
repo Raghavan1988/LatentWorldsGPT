@@ -1,4 +1,4 @@
-# Pre-Registered Analysis of Emergent Representations in Small Next-Token Transformers: Architectural Carry-Through and a Position-Correlation Probe Confound
+# Recoverable Is Not the Same as Useful: A Multi-Domain Pre-Registered Study of Small Next-Token Transformers
 
 ## Abstract
 
@@ -64,7 +64,7 @@ predictive theory of which features emerge as representations; the
 two pre-registered tests have demonstrably weakened any such claim
 we might have tried to make.
 
-**Scope.** All models studied here are in the 4M-13M parameter range
+**Scope.** All models studied here are in the 0.27M-13M parameter range
 on synthetic or semi-synthetic tasks. We do not claim that any of
 these findings extend to frontier-scale language models on
 natural-language data.
@@ -388,7 +388,7 @@ and transplant metrics.
 ### 4.1 Models
 
 All models are small decoder-only transformers (nanoGPT-style), with
-between 4M and 13M parameters depending on the domain. Architecture
+between 0.27M and 13M parameters depending on the domain. Architecture
 details (layers, embedding dimension, block size) are tabulated per
 domain in the appendix and committed in the project repository.
 
@@ -603,6 +603,12 @@ across all (domain, feature, condition) cells is in
 ablation chart and a cross-condition gradient chart are at
 [`figures/03_per_layer_ablation.png`](../../figures/03_per_layer_ablation.png) and
 [`figures/04_cross_condition_gradient.png`](../../figures/04_cross_condition_gradient.png).
+Focused Maze/HTTP companions, created for the LessWrong-facing version
+of the story, are available as
+[`figures/05_maze_shuffle_comparison.png`](../../figures/05_maze_shuffle_comparison.png),
+[`figures/06_http_shuffle_comparison.png`](../../figures/06_http_shuffle_comparison.png),
+[`figures/07_maze_http_layer_ablation.png`](../../figures/07_maze_http_layer_ablation.png),
+and [`figures/08_http_carrythrough_followups.png`](../../figures/08_http_carrythrough_followups.png).
 Readers who prefer the visual summaries before the prose may find
 [`figures/README.md`](../../figures/README.md) a useful entry point.
 
@@ -1105,10 +1111,12 @@ form of the carry-through differentiation.
 
 #### 7.2.2 Results
 
-Setup as actually run: NASA-HTTP July + August 1995 archives,
-~3.46M requests, 226k retained sessions after filtering, 8.08M
-training tokens per condition, vocab 52, model n_layer=4 / n_head=4 /
-n_embd=128 / ~0.81M params, 5,000 training iterations with
+Setup as actually run: NASA-HTTP July + August 1995 archives from the
+[Internet Traffic Archive](https://ita.ee.lbl.gov/html/contrib/NASA-HTTP.html)
+(`NASA_access_log_Jul95.gz` and `NASA_access_log_Aug95.gz`), ~3.46M
+requests, 226k retained sessions after filtering, 8.08M training tokens
+per condition, vocab 52, model n_layer=4 / n_head=4 / n_embd=128 /
+~0.81M params, 5,000 training iterations with
 dropout=0.20. Training converged val_ppl ≈ 1.54-1.58 with train/val/gen
 tightly matched — no overfit observed. Probes used class-balanced
 sampling for Feature A (an unforeseen majority-class issue surfaced
@@ -1525,7 +1533,7 @@ We flag the following limitations explicitly.
 
 ### 8.1 Scale and external validity
 
-All models in this study are 4M–13M parameters on synthetic or
+All models in this study are 0.27M-13M parameters on synthetic or
 semi-synthetic data. Whether the N-criterion (in any form) predicts
 the representational content of frontier-scale language models on
 natural-language data is **not** established by this study. Our
