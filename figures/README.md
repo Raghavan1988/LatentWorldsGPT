@@ -12,6 +12,8 @@ references the corresponding paper sections.
 | 4 | [`04_cross_condition_gradient.png`](04_cross_condition_gradient.png) | PNG (matplotlib) | Real / within-shuffled / global-shuffled gap comparison; shows where the monotonicity prediction holds and where it does not |
 | 5 | [`05_maze_shuffle_comparison.png`](05_maze_shuffle_comparison.png) | PNG (matplotlib) | Maze-only real / within-shuffled / global-shuffled comparison |
 | 6 | [`06_http_shuffle_comparison.png`](06_http_shuffle_comparison.png) | PNG (matplotlib) | HTTP-only real / within-shuffled / global-shuffled comparison |
+| 7 | [`07_maze_http_layer_ablation.png`](07_maze_http_layer_ablation.png) | PNG (matplotlib) | Blog-focused per-layer probe gaps for Maze and HTTP |
+| 8 | [`08_http_carrythrough_followups.png`](08_http_carrythrough_followups.png) | PNG (matplotlib) | HTTP carry-through follow-up ladder: decodability vs corruption usefulness |
 
 The matplotlib figures are regeneratable from the source scripts:
 
@@ -31,3 +33,5 @@ python figures/05_maze_http_shuffle_comparison.py
 | 4 (cross-condition gradient) | [`paper_draft.md`](../docs/paper/paper_draft.md) §3.3 and §5, [`report.md`](../docs/paper/report.md) §4.2 and §5 |
 | 5 (maze shuffle comparison) | [`paper_draft.md`](../docs/paper/paper_draft.md) §5.7 |
 | 6 (HTTP shuffle comparison) | [`paper_draft.md`](../docs/paper/paper_draft.md) §5.8 |
+| 7 (Maze/HTTP layer ablation) | Blog section "Multi-Seed Probing & Per-Layer Ablation" and the Maze/HTTP result sections |
+| 8 (HTTP carry-through follow-ups) | Blog section "Further Follow up" |
