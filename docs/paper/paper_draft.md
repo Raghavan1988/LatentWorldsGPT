@@ -1127,68 +1127,146 @@ bar for the small-model branch of mechanistic interpretability.
 
 ## References
 
-(Bibliography to be added in the final version. Key works cited in text:)
-
-- Li et al. (2022). *Emergent World Representations: Exploring a
-  Sequence Model Trained on a Synthetic Task.*
-- Nanda et al. (2023). *Emergent Linear Representations in World
-  Models of Self-Supervised Sequence Models.*
-- Elhage et al. (2022). *Toy Models of Superposition.*
-- Alain and Bengio (2016). *Understanding Intermediate Layers using
-  Linear Classifier Probes.*
-- Hewitt and Liang (2019). *Designing and Interpreting Probes with
-  Control Tasks.*
-- Park et al. (2023). *The Linear Representation Hypothesis and the
-  Geometry of Large Language Models.*
+- Alain, G., and Bengio, Y. (2016). *Understanding Intermediate Layers
+  Using Linear Classifier Probes.* arXiv:1610.01644.
+  <https://arxiv.org/abs/1610.01644>
+- Elhage, N., Hume, T., Olsson, C., Schiefer, N., Henighan, T.,
+  Kravec, S., Hatfield-Dodds, Z., Lasenby, R., Drain, D., Chen, C.,
+  Grosse, R., McCandlish, S., Kaplan, J., Amodei, D., Wattenberg, M.,
+  and Olah, C. (2022). *Toy Models of Superposition.*
+  <https://transformer-circuits.pub/2022/toy_model/index.html>
+- Hewitt, J., and Liang, P. (2019). *Designing and Interpreting Probes
+  with Control Tasks.* EMNLP-IJCNLP 2019. arXiv:1909.03368.
+  <https://arxiv.org/abs/1909.03368>
+- Karpathy, A. (2022). *nanoGPT.* <https://github.com/karpathy/nanoGPT>
+- Li, K., Hopkins, A. K., Bau, D., Viégas, F., Pfister, H., and
+  Wattenberg, M. (2022). *Emergent World Representations: Exploring a
+  Sequence Model Trained on a Synthetic Task.* arXiv:2210.13382.
+  <https://arxiv.org/abs/2210.13382>
+- Nanda, N., Lee, A., and Wattenberg, M. (2023). *Emergent Linear
+  Representations in World Models of Self-Supervised Sequence Models.*
+  arXiv:2309.00941. <https://arxiv.org/abs/2309.00941>
+- Park, K., Choe, Y. J., and Veitch, V. (2023). *The Linear
+  Representation Hypothesis and the Geometry of Large Language Models.*
+  arXiv:2311.03658. <https://arxiv.org/abs/2311.03658>
+- Internet Traffic Archive. *NASA-HTTP: Two Months of HTTP Logs from the
+  KSC-NASA WWW Server.* <https://ita.ee.lbl.gov/html/contrib/NASA-HTTP.html>
 
 ---
-<small>This is an independent work and does not represent any of my past or present employers.</small>
-AI assisted coding disclosure:  The implementation was very heavily AI-assisted and Claude-enabled. Data pipelines for each domain, probe and transplant scripts, training configs, figure code, and a lot of iterative debugging were done with Claude.
-## Appendix A: Reproducibility
+
+<small>This is an independent work and does not represent any of my past
+or present employers.</small>
+
+AI-assisted implementation disclosure: the implementation was heavily
+AI-assisted. Data pipelines, probe and transplant scripts, training
+configs, figure code, and iterative debugging were developed with
+Claude/Codex assistance. The claims, experiment framing, pre-registered
+predictions, and interpretation are the author's responsibility.
+
+## Appendix A: Reproducibility and Data Sources
 
 All code, data preparation pipelines, training configurations, probe
 and transplant scripts, multi-seed runners, and the pre-registered
-predictions files are publicly versioned at the project repository.
-Each headline number can be reproduced end-to-end on a laptop with
-Apple MPS in under 8 hours; the larger-scale conditions discussed in
-§8.1 require GPU rental.
+prediction files are publicly versioned at the project repository:
+<https://github.com/Raghavan1988/LatentWorldsGPT>.
+
+Each headline number in the pre-registered Maze and HTTP sections can be
+reproduced end-to-end on an Apple MPS laptop in under 8 hours. Larger
+scale reruns discussed in §8.1 would require GPU rental.
 
 The pre-registration audit trail is verifiable via:
 
-```
+```bash
 git log --diff-filter=A predictions/predictions_maze_navigation.md
 git log --diff-filter=A predictions/predictions_http_log_sequences.md
 ```
 
-which show the commit hashes `aa025b1` (maze) and `3b25ed3` (HTTP)
-predating any model training, data generation, or probe run for the
-corresponding domain.
+These commands show commit hashes `aa025b1` (maze) and `3b25ed3`
+(HTTP), predating the corresponding model training, data generation, and
+probe runs. The post-lock HTTP follow-ups are similarly auditable at
+commits `88155b4`, `0d115c2`, and `8d671ca`; the Maze C3 follow-up is
+auditable at `d7dabf6`.
 
-## Appendix B: Per-domain configurations
+| Domain | Data source / construction | Notes |
+|---|---|---|
+| Cities | OpenStreetMap-derived route corpora via OSMnx (<https://www.openstreetmap.org/>, <https://osmnx.readthedocs.io/>) | Used as a calibration domain; not pre-registered. |
+| Othello | Generated random legal games | Positive control against Othello-GPT-style prior work. |
+| Music | music21 Bach chorale corpus and related symbolic-music tooling (<https://web.mit.edu/music21/>) | Used for voice-leading/chord/beat probes and transplant tests. |
+| Flight | ADS-B trajectories from the `traffic` quickstart/sample tooling, with phase labels from OpenAP (<https://traffic-viz.github.io/>, <https://openap.dev/>) | Smallest model/data regime in the study. |
+| Symmetric group | Generated walks on finite symmetric groups | Synthetic algebraic calibration domain. |
+| Maze | Generated 8x8 recursive-backtracking mazes with shortest paths | First pre-registered test. |
+| HTTP | NASA-HTTP July/August 1995 logs from the Internet Traffic Archive | Uses `NASA_access_log_Jul95.gz` and `NASA_access_log_Aug95.gz`. |
 
-| Domain | Model | Params | Train tokens | Vocab |
-|---|---|---:|---:|---:|
-| Cities (London) | nanoGPT small | 5.3M | 1.13M | 666 |
-| Othello | medium_othello | 4.0M | 2.5M | 67 |
-| Music (expanded) | small | 1.4M | 358k | 60 |
-| Flight (ADS-B) | tiny_flight | 0.27M | 46k | approximately 80 |
-| Symmetric group (S_5) | small | 1.5M | approximately 200k | approximately 125 |
-| Maze (8×8) | maze_2M | 2.0M | 1.5M | 67 |
-| HTTP (NASA, Jul+Aug 1995) | small_http | 0.81M | 8.08M | 52 |
+## Appendix B: Per-Domain Configurations
 
-## Appendix C: Locked predictions, verbatim
+| Domain | Model | Params | Train tokens | Vocab | Main evidence type |
+|---|---|---:|---:|---:|---|
+| Cities (London) | nanoGPT small | 5.3M | 1.13M | 666 | Probe + shuffle controls |
+| Othello | medium_othello | 4.0M | 2.5M | 67 | Probe + transplant |
+| Music (expanded) | small | 1.4M | 358k | 60 | Probe + transplant |
+| Flight (ADS-B) | tiny_flight | 0.27M | 46k | approximately 80 | Probe + transplant |
+| Symmetric group (S_5) | small | 1.5M | approximately 200k | approximately 125 | Probe |
+| Maze (8x8) | maze_2M | 2.0M | 1.5M | 67 | Pre-registered probe + transplant |
+| HTTP (NASA, Jul+Aug 1995) | small_http | 0.81M | 8.08M | 52 | Pre-registered probe + interventions |
 
-Inlined: contents of `predictions/predictions_maze_navigation.md`
-(locked at commit `aa025b1`) and
-`predictions/predictions_http_log_sequences.md` (locked at commit
-`3b25ed3`). The three HTTP carry-through follow-up prediction files
-(`88155b4`, `0d115c2`, `8d671ca`) are referenced rather than inlined.
-See repository for the `git log --diff-filter=A` audit verification.
+## Appendix C: Locked Prediction Audit
 
-## Appendix D: Full multi-seed result tables
+| Prediction file | Commit | Locked prediction | Observed result | Verdict |
+|---|---|---|---|---|
+| `predictions_maze_navigation.md` | `aa025b1` | Distance-to-goal encoded; starting cell null at late positions | Distance gap `+0.009`; starting-cell gap `+0.152` | Both substantive claims falsified |
+| `predictions_http_log_sequences.md` | `3b25ed3` | Feature A encoded via carry-through; Feature B null | Feature A `+0.168`; Feature B `+0.291` raw and `+0.220` fixed-position | Feature A confirmed; Feature B falsified |
+| `predictions_http_same_request_path_carrythrough.md` | `88155b4` | Same-request path `p_k` recoverable at `sz_k` | MLP gap `+0.809` | Confirmed |
+| `predictions_http_previous_request_path_carrythrough.md` | `0d115c2` | Previous-request path `p_{k-1}` recoverable at `sz_k` | MLP gap `+0.674` | Confirmed |
+| `predictions_http_recent_large_response_path_carrythrough.md` | `8d671ca` | Most recent earlier large-response path `p_j` recoverable at `sz_k` | MLP gap `+0.621`; lag `>= 3` gap `+0.514` | Confirmed as recoverability; weak causal-usefulness at long lag |
+| `predictions_maze_c3_carrythrough.md` | `d7dabf6` | Fourth maze path cell `C3` recoverable at late positions | Primary MLP gap `+0.053`; late-only MLP gap `+0.032` | Ambiguous / not confirmed |
 
-60+ tables across all (domain × feature × condition × layer ×
-probe-type) cells. See
-[`results_maze_navigation.md`](../results/results_maze_navigation.md),
-[`results_http_log_sequences.md`](../results/results_http_log_sequences.md),
-and per-domain update files in the repository.
+## Appendix D: Headline Result Tables
+
+### D.1 Main Pre-Registered Maze and HTTP Results
+
+| Domain | Target | Prediction | Main metric | Verdict |
+|---|---|---|---:|---|
+| Maze | Distance to goal | Encoded, gap `>= +0.20` | `+0.009` MLP gap | Falsified |
+| Maze | Starting cell | Null, gap `<= +0.10` | `+0.152` MLP gap | Falsified |
+| HTTP | Feature A: first request `size_bin` | Encoded, gap `>= +0.10` | `+0.168` MLP gap | Confirmed |
+| HTTP | Feature B: cumulative large-response count | Null, gap `<= +0.10` | `+0.291` raw; `+0.220` fixed-position | Falsified |
+
+### D.2 Real / Within-Shuffled / Global-Shuffled Comparisons
+
+| Test | Real | Within-shuffled | Global-shuffled | Reading |
+|---|---:|---:|---:|---|
+| Maze distance-to-goal probe gap | `+0.009` | `+0.011` | `+0.007` | Flat null |
+| Maze starting-cell probe gap | `+0.152` | `+0.031` | `+0.154` | Real approximately global > within |
+| Maze starting-cell transplant lift | `+0.155` | `+0.017` | `+0.155` | Mirrors probe pattern |
+| HTTP Feature A probe gap | `+0.168` | `+0.134` | `+0.163` | Carry-through confirmed |
+| HTTP Feature B raw probe gap | `+0.291` | `+0.236` | `+0.303` | Null falsified; position confound suspected |
+| HTTP position-control gap | `+0.427` | `+0.541` | `+0.404` | Position strongly encoded |
+| HTTP Feature B fixed `k=5` gap | `+0.220` | `+0.199` | `+0.140` | Feature B remains after literal position control |
+| HTTP Feature B residual-after-position R2 gap | `+0.468` | `+0.429` | `+0.222` | Residual signal remains after statistical position control |
+
+### D.3 HTTP Carry-Through Follow-Ups
+
+| Follow-up | Best linear gap | Best MLP gap | Corrupt-source delta NLL on `sz_k` | Delta NLL after `sz_k` |
+|---|---:|---:|---:|---:|
+| Same-request path `p_k` | `+0.787` | `+0.809` | `+4.029` | `+0.083` |
+| Previous-request path `p_{k-1}` | `+0.535` | `+0.674` | `+0.187` | `+0.024` |
+| Recent-large-response path `p_j`, lag `>= 1` | `+0.558` | `+0.621` | `+0.084` | `+0.009` |
+| Recent-large-response path `p_j`, lag `>= 3` | `+0.460` | `+0.514` | `+0.013` | `+0.003` |
+
+### D.4 Calibration-Domain Summary
+
+| Domain / feature | Headline result | Reading |
+|---|---|---|
+| Othello board state | approximately 94% per-cell probe accuracy; transplant lift positive | Positive control reproduced |
+| Music voice-leading | transplant lift `+0.889` at L2 | Clean positive causal signal |
+| Music chord | probe gap approximately `+0.09` | Weak positive |
+| Music beat-in-measure | probe gap approximately `+0.006`; transplant null | Clean null |
+| Cities geographic location | real `+0.55`, within `+0.67`, global `+0.01` | Useful but confounded by token/co-occurrence structure |
+| Flight phase | real probe gap approximately `+0.11` | Moderate signal |
+| Symmetric-group partial product | real probe gap approximately `+0.05` | Partial signal |
+
+Full layer-by-layer and seed-level result tables remain in
+[`docs/results/results_maze_navigation.md`](../results/results_maze_navigation.md),
+[`docs/results/results_http_log_sequences.md`](../results/results_http_log_sequences.md),
+and the per-domain history files, but the tables above contain the
+numbers needed to understand the main claims without opening those files.
