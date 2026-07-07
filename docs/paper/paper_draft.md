@@ -1,4 +1,4 @@
-# Pre-Registered Analysis of Emergent Representations in Small Next-Token Transformers: Architectural Carry-Through and a Position-Correlation Probe Confound
+# Recoverable Is Not the Same as Useful: A Multi-Domain Pre-Registered Study of Small Next-Token Transformers
 
 Author: [Raghavan Muthuregunathan](https://www.linkedin.com/in/raghavanmit/) 
 
@@ -132,7 +132,7 @@ what counts as evidence.
 
 ### 1.5 Visual companions
 
-Four figures support this paper and are available in the
+Eight figures support this paper and are available in the
 [`figures/`](../../figures/) directory of the project repository. Readers
 who prefer a visual summary before the prose may find them useful.
 
@@ -149,10 +149,24 @@ who prefer a visual summary before the prose may find them useful.
   Per-layer encoding strength across domains. Embedded in §5.
 - **Figure 4**: [`figures/04_cross_condition_gradient.png`](../../figures/04_cross_condition_gradient.png).
   Cross-condition gradient comparison across domains. Embedded in §5.
+- **Figure 5**: [`figures/05_maze_shuffle_comparison.png`](../../figures/05_maze_shuffle_comparison.png).
+  Maze-only real / within-shuffled / global-shuffled comparison for the
+  pre-registered maze claims.
+- **Figure 6**: [`figures/06_http_shuffle_comparison.png`](../../figures/06_http_shuffle_comparison.png).
+  HTTP-only real / within-shuffled / global-shuffled comparison,
+  including the Feature B position-control follow-ups.
+- **Figure 7**: [`figures/07_maze_http_layer_ablation.png`](../../figures/07_maze_http_layer_ablation.png).
+  Blog-focused layer-by-layer probe gaps for the two pre-registered
+  Maze and HTTP domains.
+- **Figure 8**: [`figures/08_http_carrythrough_followups.png`](../../figures/08_http_carrythrough_followups.png).
+  HTTP carry-through follow-up ladder contrasting decodability with
+  corruption-intervention usefulness.
 
 Figure 1 is the recommended starting point. It is referenced again from
 §5 (alongside the embedded Figures 3 and 4) and from §7.1, where the
-prose narrative of the same arc lives.
+prose narrative of the same arc lives. Figures 5-8 are focused companions
+for the Maze/HTTP story emphasized in the LessWrong post; the broader
+paper keeps the cross-domain Figures 2-4 as the main visual summary.
 
 ---
 
@@ -311,7 +325,7 @@ position-control designs as a default check.
 ### 4.1 Models
 
 All models are small decoder-only transformers (nanoGPT-style),
-4M-13M parameters depending on domain. Architecture details are
+0.27M-13M parameters depending on domain. Architecture details are
 tabulated in Appendix B.
 
 ### 4.2 Three corpus conditions per domain
@@ -647,10 +661,13 @@ data was downloaded. Commit hash `3b25ed3`; audit via
 
 #### Setup and the two predictions
 
-NASA-HTTP July + August 1995 archives (3.46M requests, 226k retained
-sessions, 8.08M training tokens). Per-field tokenization: each request
-is 4 tokens (`method`, `path_category`, `status_bucket`, `size_bin`).
-Vocab 52, model n_layer=4 / n_head=4 / n_embd=128 (0.81M params).
+NASA-HTTP July + August 1995 archives from the
+[Internet Traffic Archive](https://ita.ee.lbl.gov/html/contrib/NASA-HTTP.html)
+(`NASA_access_log_Jul95.gz` and `NASA_access_log_Aug95.gz`; 3.46M
+requests, 226k retained sessions, 8.08M training tokens). Per-field
+tokenization: each request is 4 tokens (`method`, `path_category`,
+`status_bucket`, `size_bin`). Vocab 52, model n_layer=4 / n_head=4 /
+n_embd=128 (0.81M params).
 
 | # | Probe target | Category per graded framework | Predicted outcome |
 |---|---|---|---|
@@ -950,7 +967,7 @@ half as falsified by this paper's pre-registered tests.
 
 ### 8.1 Scale and external validity
 
-All models are 4M-13M parameters on synthetic or semi-synthetic data.
+All models are 0.27M-13M parameters on synthetic or semi-synthetic data.
 Whether the carry-through claim, or any other claim, extends to
 frontier-scale models on natural language is not established by this
 study. Our framing scopes the question to small models on structured
